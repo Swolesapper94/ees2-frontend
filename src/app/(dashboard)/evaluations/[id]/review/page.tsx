@@ -10,12 +10,14 @@ import Link from "next/link";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
-  RATER_COMPLETE: "Rater Complete",
+  RATER_IN_PROGRESS: "Rater In Progress",
   PENDING_SENIOR_RATER: "Pending Senior Rater",
   PENDING_SOLDIER_ACK: "Pending Soldier Ack",
-  PENDING_REVIEWER: "Pending Reviewer",
+  PENDING_SUPPLEMENTARY_REVIEW: "Pending Review",
   COMPLETE: "Complete",
   SUBMITTED: "Submitted",
+  ACCEPTED: "Accepted",
+  RETURNED: "Returned",
 };
 
 interface EvalDetail {
@@ -80,7 +82,8 @@ export default function ReviewPage() {
   if (!evalData) return <p className="text-sm text-red-600">Evaluation not found.</p>;
 
   const s = evalData.ratingChain.ratedSoldier;
-  const completedSections = evalData.sections.filter((sec) => sec.isComplete).length;
+  const sections = evalData.sections ?? [];
+  const completedSections = sections.filter((sec) => sec.isComplete).length;
 
   return (
     <div className="max-w-2xl">
@@ -97,13 +100,13 @@ export default function ReviewPage() {
           <div><span className="font-medium">Form:</span> {evalData.formType.replace(/_/g, "-")}</div>
           <div><span className="font-medium">Status:</span> {STATUS_LABELS[evalData.status]}</div>
           <div><span className="font-medium">Duty Title:</span> {evalData.principalDutyTitle ?? "—"}</div>
-          <div><span className="font-medium">Sections:</span> {completedSections}/{evalData.sections.length} complete</div>
+          <div><span className="font-medium">Sections:</span> {completedSections}/{sections.length} complete</div>
         </div>
       </div>
 
       {/* Sections preview */}
       <div className="space-y-3 mb-6">
-        {evalData.sections.map((sec) => {
+        {sections.map((sec) => {
           const rating = sec.ratingBinary
             ? RATING_BINARY_LABELS[sec.ratingBinary]
             : sec.ratingFourLevel
@@ -178,6 +181,7 @@ export default function ReviewPage() {
       )}
 
       <ConsistencyCheckModal
+        evalId={id}
         open={showModal}
         flags={flags}
         onClose={() => setShowModal(false)}

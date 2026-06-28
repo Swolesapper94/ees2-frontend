@@ -4,14 +4,21 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { SECTION_LABELS } from "@/lib/utils/form-constants";
 import { SectionEditor } from "@/components/evaluation/SectionEditor";
+import { SupportFormUploadPanel } from "@/components/evaluation/SupportFormUploadPanel";
 import { api } from "@/lib/api/client";
-import type { EvalSection } from "@/types/evaluation";
+import type {
+  EvalSection,
+  AIBulletSuggestion,
+  SupportFormUploadState,
+  Evaluation,
+} from "@/types/evaluation";
 import Link from "next/link";
 
 // CHARACTER uses binary rating; all others use four-level
 const BINARY_SECTIONS = new Set(["CHARACTER"]);
 // RATER_OVERALL, SENIOR_RATER_OVERALL, SOLDIER_COMMENTS use no rating box
 const NO_RATING_SECTIONS = new Set(["RATER_OVERALL", "SENIOR_RATER_OVERALL", "SOLDIER_COMMENTS"]);
+const PART_IV_SECTIONS = new Set(["CHARACTER", "PRESENCE", "INTELLECT", "LEADS", "DEVELOPS", "ACHIEVES"]);
 
 const SECTION_ORDER = [
   "admin", "duty",
@@ -27,19 +34,24 @@ export default function SectionPage() {
   const label = SECTION_LABELS[sectionKey] ?? sectionSlug;
 
   const [section, setSection] = useState<EvalSection | null>(null);
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [uploadState, setUploadState] = useState<SupportFormUploadState>({ hasUpload: false });
+  const [aiSuggestions, setAiSuggestions] = useState<AIBulletSuggestion[]>([]);
 
   useEffect(() => {
-    api
-      .get<{ sections: EvalSection[] }>(`/evaluations/${id}`)
-      .then((eval_) => {
+    Promise.all([
+      api.get<Evaluation>(`/evaluations/${id}`),
+      api.get<SupportFormUploadState>(`/support-form-uploads/${id}/status`),
+    ])
+      .then(([eval_, uploadStatus]) => {
         const found = eval_.sections?.find((s) => s.section === sectionKey);
-        if (found) {
-          setSection(found);
-        } else {
-          setNotFound(true);
-        }
+        if (found) setSection(found);
+        else setNotFound(true);
+        setEvaluation(eval_);
+        setUploadState(uploadStatus);
+        setAiSuggestions(uploadStatus.bulletSuggestions ?? []);
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -48,11 +60,15 @@ export default function SectionPage() {
   const handleSave = useCallback(
     async (patch: Partial<EvalSection>) => {
       await api.patch(`/evaluations/${id}/sections/${sectionKey}`, patch);
-      // Update local state optimistically
       setSection((prev) => prev ? { ...prev, ...patch } : prev);
     },
     [id, sectionKey],
   );
+
+  function handleUploadComplete(state: SupportFormUploadState) {
+    setUploadState(state);
+    if (state.bulletSuggestions) setAiSuggestions(state.bulletSuggestions);
+  }
 
   const currentIndex = SECTION_ORDER.indexOf(sectionSlug);
   const nextSlug = currentIndex >= 0 ? SECTION_ORDER[currentIndex + 1] : undefined;
@@ -63,6 +79,14 @@ export default function SectionPage() {
     : NO_RATING_SECTIONS.has(sectionKey)
       ? "none"
       : "four-level";
+
+  const soldier = (evaluation as unknown as { ratingChain?: { ratedSoldier?: { rank?: string; mos?: string } } })?.ratingChain?.ratedSoldier;
+  const soldierInfo = {
+    rank: String(soldier?.rank ?? "SGT"),
+    mos: soldier?.mos ?? "11B",
+    dutyTitle: evaluation?.principalDutyTitle ?? "Soldier",
+    formType: evaluation?.formType ?? "NCOER_9_1",
+  };
 
   return (
     <div>
@@ -78,6 +102,20 @@ export default function SectionPage() {
         )}
       </div>
 
+      {/* Support form upload panel — only on Part IV sections */}
+      {PART_IV_SECTIONS.has(sectionKey) && !loading && (
+        <div className="mb-5 rounded-md border border-border bg-card p-4">
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Soldier Support Form
+          </h3>
+          <SupportFormUploadPanel
+            evalId={id}
+            uploadState={uploadState}
+            onUploadComplete={handleUploadComplete}
+          />
+        </div>
+      )}
+
       {loading && (
         <p className="text-sm text-muted-foreground">Loading section…</p>
       )}
@@ -91,8 +129,12 @@ export default function SectionPage() {
       {section && (
         <SectionEditor
           section={section}
+          evalId={id}
+          aiBulletSuggestions={aiSuggestions}
           onSave={handleSave}
+          onSuggestionsChange={setAiSuggestions}
           ratingStyle={ratingStyle as "binary" | "four-level" | "none"}
+          soldierInfo={soldierInfo}
         />
       )}
 
@@ -125,4 +167,3 @@ export default function SectionPage() {
     </div>
   );
 }
-

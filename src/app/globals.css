@@ -25,6 +25,26 @@
     --input: 216 12% 84%;
     --ring: 74 27% 23%;
     --radius: 0.375rem;
+
+    /* Elevation (Delta §13) */
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-panel: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-modal: 0 20px 40px rgba(0, 0, 0, 0.16), 0 8px 16px rgba(0, 0, 0, 0.08);
+
+    /* Eval status — full set (Delta §2, §13) */
+    --status-not-started: #6b7280; /* gray */
+    --status-draft: #4b5563; /* slate */
+    --status-progress: #1e3a5f; /* navy */
+    --status-pending: #b45309; /* amber */
+    --status-complete: #4b5320; /* OD green */
+    --status-submitted: #2d4a1e; /* deep green */
+    --status-accepted: #1a3010; /* darkest green — terminal success */
+    --status-overdue: #7f1d1d; /* maroon */
+
+    /* Bullet source (Delta §13) */
+    --source-human: #4b5320;
+    --source-ai-modified: #1e3a5f;
+    --source-ai-raw: #b45309; /* amber — needs review */
   }
 }
 
@@ -36,4 +56,28 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+}
+
+@layer utilities {
+  /* Status text colors */
+  .text-status-not-started { color: var(--status-not-started); }
+  .text-status-draft       { color: var(--status-draft); }
+  .text-status-progress    { color: var(--status-progress); }
+  .text-status-pending     { color: var(--status-pending); }
+  .text-status-complete    { color: var(--status-complete); }
+  .text-status-submitted   { color: var(--status-submitted); }
+  .text-status-accepted    { color: var(--status-accepted); }
+  .text-status-overdue     { color: var(--status-overdue); }
+
+  /* Status background colors */
+  .bg-status-overdue   { background-color: var(--status-overdue); }
+  .bg-status-progress  { background-color: var(--status-progress); }
+  .bg-status-complete  { background-color: var(--status-complete); }
+  .bg-status-submitted { background-color: var(--status-submitted); }
+  .bg-status-accepted  { background-color: var(--status-accepted); }
+
+  /* Elevation utilities */
+  .shadow-card  { box-shadow: var(--shadow-card); }
+  .shadow-panel { box-shadow: var(--shadow-panel); }
+  .shadow-modal { box-shadow: var(--shadow-modal); }
 }

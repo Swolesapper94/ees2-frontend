@@ -4,45 +4,75 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  Star,
+  Users,
   ClipboardList,
   FileText,
+  BarChart2,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/support-form", label: "Support Form", icon: ClipboardList },
-  { href: "/evaluations", label: "Evaluations", icon: FileText },
-  { href: "/admin/users", label: "Admin", icon: Settings },
-];
+interface SidebarProps {
+  /** Show "My Soldiers" nav item — only when user has active chains as rater/SR. Defaults true. */
+  hasSoldiers?: boolean;
+  /** Show "Commander's Access" section — only for COMMANDER role. Defaults false. */
+  isCommander?: boolean;
+}
 
-export function Sidebar() {
+function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
   const pathname = usePathname();
+  const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
 
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-3 rounded-sm px-3 py-2 text-sm",
+        active
+          ? "bg-sidebar-accent text-white"
+          : "text-sidebar-text/80 hover:bg-white/5",
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </Link>
+  );
+}
+
+function Divider() {
+  return <div className="my-1 mx-2 border-t border-white/10" />;
+}
+
+export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProps) {
   return (
     <aside className="flex w-60 flex-col bg-sidebar text-sidebar-text">
       <div className="px-5 py-4 text-lg font-bold tracking-tight">EES 2.0</div>
-      <nav className="flex flex-col gap-1 px-2">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-sm px-3 py-2 text-sm",
-                active
-                  ? "bg-sidebar-accent text-white"
-                  : "text-sidebar-text/80 hover:bg-white/5",
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          );
-        })}
+      <nav className="flex flex-col gap-0.5 px-2">
+        <NavItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} />
+        <NavItem href="/evaluations" label="My Eval" icon={Star} />
+        {hasSoldiers && (
+          <NavItem href="/evaluations" label="My Soldiers" icon={Users} />
+        )}
+        <NavItem href="/support-form" label="Support Form" icon={ClipboardList} />
+
+        <Divider />
+
+        {isCommander && (
+          <>
+            <p className="px-3 pt-1 pb-0.5 text-[10px] font-semibold uppercase tracking-widest text-sidebar-text/40">
+              Commander&apos;s Access
+            </p>
+            <NavItem href="/commander" label="Formation Overview" icon={Users} />
+            <Divider />
+          </>
+        )}
+
+        <NavItem href="/evaluations" label="All Evaluations" icon={FileText} />
+        <NavItem href="/analytics" label="Analytics" icon={BarChart2} />
+        <NavItem href="/admin/users" label="Admin" icon={Settings} />
       </nav>
     </aside>
   );
 }
+

@@ -69,6 +69,22 @@ export const api = {
     request<T>(path, { method: "PATCH", body }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 
+  /** Multipart file upload — bypasses the JSON content-type header. */
+  upload: async <T>(path: string, formData: FormData): Promise<T> => {
+    const headers: Record<string, string> = { ...(await authHeader()) };
+    const res = await fetch(`${API_URL}/api${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      let details: unknown;
+      try { details = await res.json(); } catch { details = await res.text(); }
+      throw new ApiError(res.status, `Upload failed: ${res.status}`, details);
+    }
+    return (await res.json()) as T;
+  },
+
   // Returns the absolute URL for binary downloads (PDF).
   pdfUrl: (evaluationId: string) =>
     `${API_URL}/api/pdf/evaluations/${evaluationId}`,

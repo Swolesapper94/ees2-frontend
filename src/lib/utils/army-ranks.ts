@@ -49,3 +49,48 @@ export function formTypeForRank(rank: string): EvalFormType | null {
 export function usesBinaryScale(formType: EvalFormType): boolean {
   return formType === "NCOER_9_1";
 }
+
+/** Full rank → form mapping with builder availability flag. */
+export function resolveFormType(rank: string): {
+  formType: EvalFormType;
+  evalType: "NCOER" | "OER";
+  builderAvailable: boolean;
+} {
+  switch (rank) {
+    case "SGT":
+      return { formType: "NCOER_9_1", evalType: "NCOER", builderAvailable: true };
+    case "SSG":
+    case "SFC":
+    case "MSG":
+    case "FIRST_SERGEANT":
+      return { formType: "NCOER_9_2", evalType: "NCOER", builderAvailable: true };
+    case "SGM":
+    case "CSM":
+    case "SMA":
+      return { formType: "NCOER_9_3", evalType: "NCOER", builderAvailable: true };
+    case "WO1":
+    case "CW2":
+      return { formType: "OER_67_10_1A", evalType: "OER", builderAvailable: false };
+    case "CW3":
+    case "CW4":
+    case "CW5":
+      return { formType: "OER_67_10_2A", evalType: "OER", builderAvailable: false };
+    case "SECOND_LT":
+    case "FIRST_LT":
+      return { formType: "OER_67_10_1", evalType: "OER", builderAvailable: false };
+    case "CPT":
+      return { formType: "OER_67_10_2", evalType: "OER", builderAvailable: false };
+    case "MAJ":
+    case "LTC":
+    case "COL":
+      return { formType: "OER_67_10_3", evalType: "OER", builderAvailable: false };
+    case "BG":
+    case "MG":
+    case "LTG":
+    case "GEN":
+    case "GA":
+      return { formType: "OER_67_10_4", evalType: "OER", builderAvailable: false };
+    default:
+      return { formType: "NCOER_9_1", evalType: "NCOER", builderAvailable: false };
+  }
+}

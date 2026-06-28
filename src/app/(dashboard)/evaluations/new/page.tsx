@@ -1,172 +1,165 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { EvalCreationWizard } from "@/components/evaluation/EvalCreationWizard";
+import { SoldierInitWizard } from "@/components/evaluation/SoldierInitWizard";
 import { api } from "@/lib/api/client";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils/cn";
 
 interface RatingChain {
   id: string;
-  ratedSoldier: { firstName: string; lastName: string; rank: string };
+  ratedSoldier: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    rank: string;
+    mos: string;
+  };
   rater: { firstName: string; lastName: string; rank: string };
   seniorRater: { firstName: string; lastName: string; rank: string };
+  periodStart?: string;
 }
 
-// Map rank to form type
-const getRankFormType = (rank: string): "NCOER_9_1" | "NCOER_9_2" | "NCOER_9_3" => {
-  if (rank === "SGT") return "NCOER_9_1";
-  if (["SSG", "1SG", "MSG"].includes(rank)) return "NCOER_9_2";
-  if (["CSM", "SGM"].includes(rank)) return "NCOER_9_3";
-  return "NCOER_9_1"; // default
-};
+type Mode = "choose" | "soldier" | "rater";
 
 export default function NewEvaluationPage() {
   const router = useRouter();
-  const [chains, setChains] = useState<RatingChain[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const params = useSearchParams();
+  const prefillChainId = params.get("chainId") ?? undefined;
+  const forceMode = params.get("mode") as Mode | null;
 
-  const [form, setForm] = useState({
-    ratingChainId: "",
-    formType: "NCOER_9_1" as "NCOER_9_1" | "NCOER_9_2" | "NCOER_9_3",
-    periodStart: "",
-    periodEnd: "",
-    ratedMonths: 12,
-    reasonForSubmission: "Annual",
-  });
+  const [mode, setMode] = useState<Mode>(forceMode ?? "choose");
+  const [chains, setChains] = useState<RatingChain[]>([]);
+  const [chainsLoading, setChainsLoading] = useState(true);
 
   useEffect(() => {
     api
       .get<RatingChain[]>("/rating-chains")
       .then(setChains)
-      .catch(() => setError("Could not load rating chains"))
-      .finally(() => setLoading(false));
+      .catch(() => {})
+      .finally(() => setChainsLoading(false));
   }, []);
 
-  const handleChainChange = (chainId: string) => {
-    const chain = chains.find((c) => c.id === chainId);
-    if (chain) {
-      const formType = getRankFormType(chain.ratedSoldier.rank);
-      setForm({ ...form, ratingChainId: chainId, formType });
-    }
-  };
+  return (
+    <Suspense fallback={<div className="p-6">Loading...</div>}>
+      <NewEvaluationPageContent
+        mode={mode}
+        setMode={setMode}
+        chains={chains}
+        chainsLoading={chainsLoading}
+        prefillChainId={prefillChainId}
+      />
+    </Suspense>
+  );
+}
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const created = await api.post<{ id: string }>("/evaluations", form);
-      router.push(`/evaluations/${created.id}/admin`);
-    } catch {
-      setError("Failed to create evaluation");
-      setSubmitting(false);
-    }
+interface NewEvaluationPageContentProps {
+  mode: Mode;
+  setMode: (mode: Mode) => void;
+  chains: RatingChain[];
+  chainsLoading: boolean;
+  prefillChainId?: string;
+}
+
+function NewEvaluationPageContent({
+  mode,
+  setMode,
+  chains,
+  chainsLoading,
+  prefillChainId,
+}: NewEvaluationPageContentProps) {
+
+  if (mode === "rater") {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">Start New Evaluation</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Creates the evaluation record and auto-generates AR 623-3 milestones.
+          </p>
+        </div>
+        <EvalCreationWizard
+          prefillChainId={prefillChainId}
+          onCancel={() => setMode("choose")}
+        />
+      </div>
+    );
   }
 
+  if (mode === "soldier") {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">Initiate My Evaluation</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            You&apos;ll confirm your rating period and optionally upload your support form.
+            Your rater will be notified to begin Part IV.
+          </p>
+        </div>
+        {chainsLoading ? (
+          <p className="text-sm text-muted-foreground">Loading rating chains…</p>
+        ) : (
+          <SoldierInitWizard
+            chains={chains}
+            myChainId={prefillChainId}
+            onCancel={() => setMode("choose")}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Mode chooser
   return (
-    <div className="p-6 max-w-lg">
-      <h1 className="mb-1 text-2xl font-bold tracking-tight">Start NCOER</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Select a soldier — form type auto-populates by rank.
-      </p>
-
-      {loading && <p className="text-sm text-muted-foreground">Loading rating chains…</p>}
-      {error && (
-        <p className="mb-4 rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
+    <div className="p-6">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Start Evaluation</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Who is initiating this evaluation?
         </p>
-      )}
+      </div>
 
-      {!loading && (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Soldier</label>
-            <select
-              required
-              value={form.ratingChainId}
-              onChange={(e) => handleChainChange(e.target.value)}
-              className="w-full rounded-sm border border-input bg-background p-2 text-sm"
-            >
-              <option value="">Select soldier…</option>
-              {chains.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.ratedSoldier.rank} {c.ratedSoldier.lastName}, {c.ratedSoldier.firstName}
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
+        <button
+          type="button"
+          onClick={() => setMode("soldier")}
+          className={cn(
+            "group rounded-lg border-2 border-border p-5 text-left transition-all",
+            "hover:border-[#1A3010] hover:bg-[#1A3010]/5",
+          )}
+        >
+          <div className="mb-2 text-2xl">🪖</div>
+          <h3 className="font-semibold text-sm">I&apos;m the Rated Soldier</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Initiate your own evaluation, confirm your rating period, and optionally
+            upload your support form. Your rater will be notified.
+          </p>
+          <p className="mt-2 text-xs font-medium text-[#1A3010]">
+            Soldier-Initiated (AR 623-3 §3-12) →
+          </p>
+        </button>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">Form Type</label>
-            <div className="w-full rounded-sm border border-input bg-muted p-2 text-sm text-muted-foreground">
-              {form.formType === "NCOER_9_1" && "DA 2166-9-1 (SGT)"}
-              {form.formType === "NCOER_9_2" && "DA 2166-9-2 (SSG–1SG/MSG)"}
-              {form.formType === "NCOER_9_3" && "DA 2166-9-3 (CSM/SGM)"}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Period Start</label>
-              <input
-                type="date"
-                required
-                value={form.periodStart}
-                onChange={(e) => setForm({ ...form, periodStart: e.target.value })}
-                className="w-full rounded-sm border border-input bg-background p-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Period End</label>
-              <input
-                type="date"
-                required
-                value={form.periodEnd}
-                onChange={(e) => setForm({ ...form, periodEnd: e.target.value })}
-                className="w-full rounded-sm border border-input bg-background p-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">Rated Months</label>
-            <input
-              type="number"
-              min="1"
-              max="12"
-              value={form.ratedMonths}
-              onChange={(e) => setForm({ ...form, ratedMonths: parseInt(e.target.value) })}
-              className="w-full rounded-sm border border-input bg-background p-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium">Reason for Submission</label>
-            <select
-              value={form.reasonForSubmission}
-              onChange={(e) => setForm({ ...form, reasonForSubmission: e.target.value })}
-              className="w-full rounded-sm border border-input bg-background p-2 text-sm"
-            >
-              <option>Annual</option>
-              <option>Change of Rater</option>
-              <option>Relief for Cause</option>
-              <option>Senior Rater Option</option>
-              <option>Promotion</option>
-              <option>Retirement</option>
-              <option>Separation</option>
-            </select>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={submitting || !form.ratingChainId}
-            className="w-full bg-military-green hover:bg-military-green/90"
-          >
-            {submitting ? "Creating…" : "Create NCOER"}
-          </Button>
-        </form>
-      )}
+        <button
+          type="button"
+          onClick={() => setMode("rater")}
+          className={cn(
+            "group rounded-lg border-2 border-border p-5 text-left transition-all",
+            "hover:border-[#1A3010] hover:bg-[#1A3010]/5",
+          )}
+        >
+          <div className="mb-2 text-2xl">📋</div>
+          <h3 className="font-semibold text-sm">I&apos;m the Rater / Admin</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Create the evaluation for a soldier in your rating chain.
+            Full wizard with all form options.
+          </p>
+          <p className="mt-2 text-xs font-medium text-[#1A3010]">
+            Rater-Initiated →
+          </p>
+        </button>
+      </div>
     </div>
   );
 }
+

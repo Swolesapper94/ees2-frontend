@@ -8,22 +8,26 @@ import type { Evaluation, EvalStatus } from "@/types/evaluation";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
-  RATER_COMPLETE: "Rater Complete",
+  RATER_IN_PROGRESS: "Rater In Progress",
   PENDING_SENIOR_RATER: "Pending Senior Rater",
   PENDING_SOLDIER_ACK: "Pending Soldier Ack",
-  PENDING_REVIEWER: "Pending Reviewer",
+  PENDING_SUPPLEMENTARY_REVIEW: "Pending Review",
   COMPLETE: "Complete",
   SUBMITTED: "Submitted",
+  ACCEPTED: "Accepted",
+  RETURNED: "Returned",
 };
 
 const STATUS_COLORS: Record<EvalStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-700",
-  RATER_COMPLETE: "bg-blue-100 text-blue-700",
+  RATER_IN_PROGRESS: "bg-blue-100 text-blue-700",
   PENDING_SENIOR_RATER: "bg-amber-100 text-amber-700",
   PENDING_SOLDIER_ACK: "bg-orange-100 text-orange-700",
-  PENDING_REVIEWER: "bg-purple-100 text-purple-700",
+  PENDING_SUPPLEMENTARY_REVIEW: "bg-purple-100 text-purple-700",
   COMPLETE: "bg-green-100 text-green-700",
   SUBMITTED: "bg-emerald-100 text-emerald-700",
+  ACCEPTED: "bg-emerald-200 text-emerald-900",
+  RETURNED: "bg-red-100 text-red-700",
 };
 
 interface EvalWithChain extends Evaluation {

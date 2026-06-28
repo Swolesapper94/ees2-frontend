@@ -6,25 +6,49 @@ import type {
   RatingBinary,
   RatingFourLevel,
   BulletSource,
+  AIBulletSuggestion,
+  SectionKey,
 } from "@/types/evaluation";
 import { RatingBoxBinary } from "./RatingBoxBinary";
 import { RatingBoxFourLevel } from "./RatingBoxFourLevel";
 import { BulletEditor } from "./BulletEditor";
 import { BulletCard } from "./BulletCard";
+import { AIBulletPanel } from "./AIBulletPanel";
+import { api } from "@/lib/api/client";
 import { BULLET_MAX_CHARS } from "@/lib/utils/form-constants";
+import { cn } from "@/lib/utils/cn";
+
+const PART_IV_SECTIONS: SectionKey[] = [
+  "CHARACTER",
+  "PRESENCE",
+  "INTELLECT",
+  "LEADS",
+  "DEVELOPS",
+  "ACHIEVES",
+];
 
 export interface SectionEditorProps {
   section: EvalSection;
+  evalId: string;
+  /** AI bullet suggestions for this evaluation (all sections) */
+  aiBulletSuggestions?: AIBulletSuggestion[];
   /** Called with merged updates after any change */
   onSave?: (patch: Partial<EvalSection>) => Promise<void>;
+  onSuggestionsChange?: (updated: AIBulletSuggestion[]) => void;
   /** Which rating style to show — binary (CHARACTER) or four-level (PRESENCE…ACHIEVES) */
   ratingStyle?: "binary" | "four-level" | "none";
+  /** Soldier info for from-scratch generation */
+  soldierInfo?: { rank: string; mos: string; dutyTitle: string; formType: string };
 }
 
 export function SectionEditor({
   section,
+  evalId,
+  aiBulletSuggestions = [],
   onSave,
+  onSuggestionsChange,
   ratingStyle = "four-level",
+  soldierInfo,
 }: SectionEditorProps) {
   const [ratingBinary, setRatingBinary] = useState<RatingBinary | null>(
     section.ratingBinary,
@@ -35,14 +59,32 @@ export function SectionEditor({
   const [finalBullets, setFinalBullets] = useState<string[]>(
     section.finalBullets ?? [],
   );
-  const [bulletSources, setBulletSources] = useState<
-    Record<string, BulletSource>
-  >((section.bulletSources as Record<string, BulletSource>) ?? {});
+  const [bulletSources, setBulletSources] = useState<Record<string, BulletSource>>(
+    (section.bulletSources as Record<string, BulletSource>) ?? {},
+  );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(
+    aiBulletSuggestions.some(
+      (s) => s.sectionKey === section.section && s.status === "PENDING_REVIEW",
+    ),
+  );
+  const [scratchMode, setScratchMode] = useState(false);
+  const [scratchText, setScratchText] = useState("");
+  const [generatingScratch, setGeneratingScratch] = useState(false);
+  const [localSuggestions, setLocalSuggestions] = useState<AIBulletSuggestion[]>(
+    aiBulletSuggestions,
+  );
 
-  const canAddBullet = finalBullets.length < 5; // Army max per section is typically 3-5
+  const isPartIVSection = PART_IV_SECTIONS.includes(section.section as SectionKey);
+  const canAddBullet = finalBullets.length < 5;
+  const sectionSuggestions = localSuggestions.filter(
+    (s) => s.sectionKey === section.section,
+  );
+  const pendingReviewCount = sectionSuggestions.filter(
+    (s) => s.status === "PENDING_REVIEW",
+  ).length;
 
   const save = useCallback(
     async (patch: Partial<EvalSection>) => {
@@ -69,12 +111,12 @@ export function SectionEditor({
     await save({ ratingFourLevel: val });
   }
 
-  async function handleAddBullet(text: string) {
+  async function handleAddBullet(text: string, source: BulletSource = "HUMAN") {
     if (!text.trim() || text.length > BULLET_MAX_CHARS) return;
     const newBullets = [...finalBullets, text];
     const newSources: Record<string, BulletSource> = {
       ...bulletSources,
-      [String(newBullets.length - 1)]: "HUMAN",
+      [String(newBullets.length - 1)]: source,
     };
     setFinalBullets(newBullets);
     setBulletSources(newSources);
@@ -83,7 +125,6 @@ export function SectionEditor({
 
   async function handleEditBullet(index: number, text: string) {
     const newBullets = finalBullets.map((b, i) => (i === index ? text : b));
-    // Mark as HUMAN if they edited it regardless of original source
     const newSources: Record<string, BulletSource> = {
       ...bulletSources,
       [String(index)]: "HUMAN",
@@ -107,7 +148,47 @@ export function SectionEditor({
   }
 
   async function handleMarkComplete() {
+    if (pendingReviewCount > 0) {
+      alert(
+        `Review all AI suggestions first — ${pendingReviewCount} remaining.\n\nAccept, edit, or reject each suggestion before marking complete.`,
+      );
+      return;
+    }
     await save({ isComplete: true });
+  }
+
+  async function handleGenerateScratch() {
+    if (!scratchText.trim()) return;
+    setGeneratingScratch(true);
+    try {
+      const info = soldierInfo ?? { rank: "SGT", mos: "11B", dutyTitle: "Soldier", formType: "NCOER_9_1" };
+      const result = await api.post<{ suggestions: AIBulletSuggestion[] }>(
+        `/support-form-uploads/${evalId}/generate-scratch`,
+        {
+          sectionKey: section.section,
+          raterDescription: scratchText,
+          soldierRank: info.rank,
+          soldierMos: info.mos,
+          dutyTitle: info.dutyTitle,
+          formType: info.formType,
+        },
+      );
+      const merged = [...localSuggestions, ...(result.suggestions ?? [])];
+      setLocalSuggestions(merged);
+      onSuggestionsChange?.(merged);
+      setScratchMode(false);
+      setScratchText("");
+      setAiPanelOpen(true);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setGeneratingScratch(false);
+    }
+  }
+
+  function handleSuggestionsChange(updated: AIBulletSuggestion[]) {
+    setLocalSuggestions(updated);
+    onSuggestionsChange?.(updated);
   }
 
   return (
@@ -133,53 +214,153 @@ export function SectionEditor({
         </div>
       )}
 
-      {/* Committed bullets */}
-      <div>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Performance Bullets ({finalBullets.length}/5)
-        </h3>
-
-        {finalBullets.length === 0 && (
-          <p className="rounded-sm border border-dashed border-border p-3 text-sm text-muted-foreground">
-            No bullets yet. Add your first performance bullet below.
-          </p>
-        )}
-
-        <div className="space-y-2">
-          {finalBullets.map((bullet, i) =>
-            editingIndex === i ? (
-              <BulletEditor
-                key={i}
-                initialText={bullet}
-                onSave={(text) => handleEditBullet(i, text)}
-              />
-            ) : (
-              <BulletCard
-                key={i}
-                text={bullet}
-                source={bulletSources[String(i)] ?? "HUMAN"}
-                onEdit={() => setEditingIndex(i)}
-                onRemove={() => handleRemoveBullet(i)}
-              />
-            ),
-          )}
-        </div>
-      </div>
-
-      {/* Add new bullet */}
-      {canAddBullet && editingIndex === null && (
-        <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Add Bullet
-          </h3>
-          <BulletEditor onSave={handleAddBullet} />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Army format: begin with action verb, focus on impact, ≤{BULLET_MAX_CHARS} chars.
-          </p>
+      {/* AI Panel Toggle */}
+      {isPartIVSection && (
+        <div className="flex items-center justify-between rounded border border-border bg-muted/30 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">AI Suggestions</span>
+            {sectionSuggestions.length > 0 && (
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-[10px] font-semibold",
+                  pendingReviewCount > 0
+                    ? "bg-amber-100 text-amber-800"
+                    : "bg-green-100 text-green-800",
+                )}
+              >
+                {pendingReviewCount > 0
+                  ? `${pendingReviewCount} need review`
+                  : `${sectionSuggestions.length} reviewed`}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setAiPanelOpen((o) => !o)}
+            className={cn(
+              "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+              aiPanelOpen
+                ? "bg-[#1A3010] text-white"
+                : "border border-border bg-background text-foreground hover:bg-muted",
+            )}
+          >
+            {aiPanelOpen ? "Hide AI" : "Show AI"}
+          </button>
         </div>
       )}
 
-      {/* Status / save feedback */}
+      {/* Main content: split when AI open, single column otherwise */}
+      <div className={cn(aiPanelOpen && isPartIVSection ? "grid gap-6 lg:grid-cols-2" : "")}>
+        {/* Left column: bullets */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Performance Bullets ({finalBullets.length}/5)
+            </h3>
+
+            {finalBullets.length === 0 && (
+              <p className="rounded border border-dashed border-border p-3 text-sm text-muted-foreground">
+                No bullets yet. Accept AI suggestions or add manually below.
+              </p>
+            )}
+
+            <div className="space-y-2">
+              {finalBullets.map((bullet, i) =>
+                editingIndex === i ? (
+                  <BulletEditor
+                    key={i}
+                    initialText={bullet}
+                    onSave={(text) => handleEditBullet(i, text)}
+                  />
+                ) : (
+                  <BulletCard
+                    key={i}
+                    text={bullet}
+                    source={bulletSources[String(i)] ?? "HUMAN"}
+                    onEdit={() => setEditingIndex(i)}
+                    onRemove={() => handleRemoveBullet(i)}
+                  />
+                ),
+              )}
+            </div>
+          </div>
+
+          {canAddBullet && editingIndex === null && (
+            <div>
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Add Bullet Manually
+              </h3>
+              <BulletEditor onSave={(t) => handleAddBullet(t, "HUMAN")} />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Army format: begin with action verb, focus on impact, ≤{BULLET_MAX_CHARS} chars.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Right column: AI suggestions */}
+        {aiPanelOpen && isPartIVSection && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              AI Bullet Suggestions
+            </h3>
+
+            <AIBulletPanel
+              evalId={evalId}
+              sectionKey={section.section as SectionKey}
+              suggestions={localSuggestions}
+              onAccept={(text) => handleAddBullet(text, "AI_UNMODIFIED")}
+              onSuggestionsChange={handleSuggestionsChange}
+            />
+
+            {/* From-scratch generation */}
+            {!scratchMode ? (
+              <button
+                type="button"
+                onClick={() => setScratchMode(true)}
+                className="w-full rounded border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5"
+              >
+                + Generate from scratch (describe what this soldier did)
+              </button>
+            ) : (
+              <div className="space-y-2 rounded border border-border p-3">
+                <p className="text-xs font-medium text-foreground">
+                  Describe what this soldier did:
+                </p>
+                <textarea
+                  className="w-full resize-none rounded border border-border bg-background p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  rows={4}
+                  placeholder="e.g. Led 12-soldier squad through 3 field exercises, managed $240K equipment, trained 4 junior NCOs…"
+                  value={scratchText}
+                  onChange={(e) => setScratchText(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setScratchMode(false); setScratchText(""); }}
+                    className="rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!scratchText.trim() || generatingScratch}
+                    onClick={handleGenerateScratch}
+                    className="flex items-center gap-1 rounded bg-[#1A3010] px-3 py-1 text-xs text-white disabled:opacity-50"
+                  >
+                    {generatingScratch && (
+                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    )}
+                    Generate Bullets
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
       <div className="flex items-center justify-between border-t border-border pt-4">
         {saveError ? (
           <p className="text-sm text-destructive">{saveError}</p>
@@ -194,13 +375,25 @@ export function SectionEditor({
           <button
             type="button"
             onClick={handleMarkComplete}
-            className="rounded-sm bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+            disabled={pendingReviewCount > 0}
+            className={cn(
+              "rounded-sm px-3 py-1.5 text-sm font-medium transition-colors",
+              pendingReviewCount > 0
+                ? "cursor-not-allowed bg-muted text-muted-foreground"
+                : "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+            title={
+              pendingReviewCount > 0
+                ? `Review ${pendingReviewCount} AI suggestion${pendingReviewCount !== 1 ? "s" : ""} first`
+                : undefined
+            }
           >
-            Mark Complete
+            {pendingReviewCount > 0
+              ? `Review ${pendingReviewCount} suggestion${pendingReviewCount !== 1 ? "s" : ""} first`
+              : "Mark Complete"}
           </button>
         )}
       </div>
     </div>
   );
 }
-

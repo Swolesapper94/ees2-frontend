@@ -11,12 +11,14 @@ export interface RatingChainStatusProps {
 
 const STATUS_LABEL: Record<EvalStatus, string> = {
   DRAFT: "Draft",
-  RATER_COMPLETE: "Rater Complete",
+  RATER_IN_PROGRESS: "Rater In Progress",
   PENDING_SENIOR_RATER: "Pending Senior Rater",
   PENDING_SOLDIER_ACK: "Pending Soldier Acknowledgement",
-  PENDING_REVIEWER: "Pending Reviewer",
+  PENDING_SUPPLEMENTARY_REVIEW: "Pending Supplementary Review",
   COMPLETE: "Complete",
   SUBMITTED: "Submitted",
+  ACCEPTED: "Accepted",
+  RETURNED: "Returned",
 };
 
 export function RatingChainStatus({
