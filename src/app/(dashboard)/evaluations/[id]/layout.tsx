@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { SoldierHeader } from "@/components/layout/SoldierHeader";
 import { SectionNav } from "@/components/evaluation/SectionNav";
 import { api } from "@/lib/api/client";
@@ -21,8 +21,12 @@ interface EvalMeta {
 
 export default function EvaluationLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
+  const pathname = usePathname();
   const id = params.id as string;
   const [meta, setMeta] = useState<EvalMeta | null>(null);
+
+  // Sign page manages its own full-height layout — no padding wrapper
+  const isSignPage = pathname?.endsWith("/sign");
 
   useEffect(() => {
     if (id) api.get<EvalMeta>(`/evaluations/${id}`).then(setMeta).catch(() => null);
@@ -50,7 +54,7 @@ export default function EvaluationLayout({ children }: { children: React.ReactNo
           rater={rater ? `${rater.rank} ${rater.lastName}` : ""}
           seniorRater={sr ? `${sr.rank} ${sr.lastName}` : ""}
         />
-        <div className="p-6">{children}</div>
+        <div className={isSignPage ? "flex-1 overflow-hidden" : "flex-1 overflow-y-auto p-6"}>{children}</div>
       </div>
     </div>
   );
