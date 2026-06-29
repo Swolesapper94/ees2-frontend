@@ -22,7 +22,8 @@ interface SidebarProps {
 
 function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
   const pathname = usePathname();
-  const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+  const isChildRoute = pathname.startsWith(href + "/");
+  const active = pathname === href || isChildRoute;
 
   return (
     <Link
@@ -52,7 +53,7 @@ export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProp
         <NavItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} />
         <NavItem href="/evaluations" label="My Eval" icon={Star} />
         {hasSoldiers && (
-          <NavItem href="/evaluations" label="My Soldiers" icon={Users} />
+          <NavItem href="/my-soldiers" label="My Soldiers" icon={Users} />
         )}
         <NavItem href="/support-form" label="Support Form" icon={ClipboardList} />
 
@@ -68,7 +69,7 @@ export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProp
           </>
         )}
 
-        <NavItem href="/evaluations" label="All Evaluations" icon={FileText} />
+        <NavItem href="/all-evaluations" label="All Evaluations" icon={FileText} />
         <NavItem href="/analytics" label="Analytics" icon={BarChart2} />
         <NavItem href="/admin/users" label="Admin" icon={Settings} />
       </nav>
