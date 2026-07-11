@@ -1,20 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api/client";
+import { api, ApiError } from "@/lib/api/client";
 import type {
   AIBulletSuggestion,
   AIBulletStatus,
+  EvalSection,
   SectionKey,
 } from "@/types/evaluation";
 import { cn } from "@/lib/utils/cn";
+import { AlertTriangle } from "lucide-react";
 
 interface AIBulletPanelProps {
   evalId: string;
   sectionKey: SectionKey;
   suggestions: AIBulletSuggestion[];
-  /** Called when a bullet is accepted (original or edited) — adds to final bullets */
-  onAccept: (text: string) => void;
+  /**
+   * Called after a suggestion is accepted/edited with the server's
+   * authoritative updated section (finalBullets/bulletSources/
+   * bulletProvenance all applied atomically server-side) — the parent
+   * should replace its local section state with this directly rather than
+   * re-deriving it, since accept is now a single transactional call.
+   */
+  onSectionUpdated: (section: EvalSection) => void;
   /** Called after any status mutation so parent can re-sync */
   onSuggestionsChange: (updated: AIBulletSuggestion[]) => void;
 }
@@ -36,12 +44,13 @@ export function AIBulletPanel({
   evalId,
   sectionKey,
   suggestions,
-  onAccept,
+  onSectionUpdated,
   onSuggestionsChange,
 }: AIBulletPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
   const [loading, setLoading] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Only show bullets for this section that are pending review or acted-on
   const sectionSuggestions = suggestions
@@ -58,25 +67,27 @@ export function AIBulletPanel({
     edited?: string,
   ) {
     setLoading(bulletId);
+    setErrors((prev) => ({ ...prev, [bulletId]: "" }));
     try {
-      const updated = await api.patch<AIBulletSuggestion>(
+      const result = await api.patch<{ suggestion: AIBulletSuggestion; section?: EvalSection }>(
         `/support-form-uploads/bullets/${bulletId}`,
         { action, editedText: edited },
       );
       const newSuggestions = suggestions.map((s) =>
-        s.id === bulletId ? { ...s, ...updated } : s,
+        s.id === bulletId ? { ...s, ...result.suggestion } : s,
       );
       onSuggestionsChange(newSuggestions);
 
-      if (action === "ACCEPTED") {
-        const bullet = suggestions.find((s) => s.id === bulletId);
-        if (bullet) onAccept(bullet.text);
-      }
-      if (action === "EDITED" && edited) {
-        onAccept(edited);
-      }
+      // ACCEPTED/EDITED return the updated section — the accept+append is now
+      // one atomic server-side transaction, so just take its result directly
+      // instead of triggering a second client-driven section PATCH.
+      if (result.section) onSectionUpdated(result.section);
     } catch (e) {
-      console.error(e);
+      const message =
+        e instanceof ApiError && e.status === 409
+          ? "This suggestion was already reviewed (maybe in another tab) — refresh to see the latest."
+          : "Failed to save — try again.";
+      setErrors((prev) => ({ ...prev, [bulletId]: message }));
     } finally {
       setLoading(null);
       setEditingId(null);
@@ -142,6 +153,8 @@ export function AIBulletPanel({
                   maxLength={300}
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
+                  placeholder="Edit bullet text"
+                  aria-label="Edit bullet text"
                   autoFocus
                 />
                 <div className="flex items-center justify-between">
@@ -169,6 +182,25 @@ export function AIBulletPanel({
               </div>
             ) : (
               <p className="text-foreground leading-snug">{s.editedText ?? s.text}</p>
+            )}
+
+            {/* Unsupported-fact warnings — advisory only, visible before
+                acceptance (MVP audit 5.10). Not shown once acted on. */}
+            {!isActedOn && !isEditing && s.unsupportedClaims && s.unsupportedClaims.length > 0 && (
+              <div className="mt-2 space-y-1 rounded border border-amber-200 bg-amber-50 p-2">
+                {s.unsupportedClaims.map((claim, i) => (
+                  <p key={i} className="flex items-start gap-1.5 text-[11px] text-amber-800">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>
+                      &ldquo;{claim.claimText}&rdquo; not found in selected sources — {claim.reason}
+                    </span>
+                  </p>
+                ))}
+              </div>
+            )}
+
+            {errors[s.id] && (
+              <p className="mt-2 text-[11px] text-destructive">{errors[s.id]}</p>
             )}
 
             {/* Action buttons — only show for PENDING_REVIEW */}

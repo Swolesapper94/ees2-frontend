@@ -53,7 +53,7 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        "flex flex-shrink-0 items-center justify-center rounded-full bg-[var(--color-od-green)] font-bold text-white",
+        "flex flex-shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-white",
         SIZE_MAP[size],
         className,
       )}

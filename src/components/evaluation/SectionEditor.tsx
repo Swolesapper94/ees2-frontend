@@ -8,12 +8,15 @@ import type {
   BulletSource,
   AIBulletSuggestion,
   SectionKey,
+  SupportFormEntry,
 } from "@/types/evaluation";
 import { RatingBoxBinary } from "./RatingBoxBinary";
 import { RatingBoxFourLevel } from "./RatingBoxFourLevel";
 import { BulletEditor } from "./BulletEditor";
 import { BulletCard } from "./BulletCard";
 import { AIBulletPanel } from "./AIBulletPanel";
+import { SoldierAccomplishmentsPanel } from "./SoldierAccomplishmentsPanel";
+import { BulletSkeleton } from "./BulletSkeleton";
 import { api } from "@/lib/api/client";
 import { BULLET_MAX_CHARS } from "@/lib/utils/form-constants";
 import { cn } from "@/lib/utils/cn";
@@ -39,6 +42,8 @@ export interface SectionEditorProps {
   ratingStyle?: "binary" | "four-level" | "none";
   /** Soldier info for from-scratch generation */
   soldierInfo?: { rank: string; mos: string; dutyTitle: string; formType: string };
+  /** Soldier-logged support form entries (guided flow) — used by the Soldier Accomplishments widget */
+  supportFormEntries?: SupportFormEntry[];
 }
 
 export function SectionEditor({
@@ -49,6 +54,7 @@ export function SectionEditor({
   onSuggestionsChange,
   ratingStyle = "four-level",
   soldierInfo,
+  supportFormEntries = [],
 }: SectionEditorProps) {
   const [ratingBinary, setRatingBinary] = useState<RatingBinary | null>(
     section.ratingBinary,
@@ -61,6 +67,9 @@ export function SectionEditor({
   );
   const [bulletSources, setBulletSources] = useState<Record<string, BulletSource>>(
     (section.bulletSources as Record<string, BulletSource>) ?? {},
+  );
+  const [bulletProvenance, setBulletProvenance] = useState<EvalSection["bulletProvenance"]>(
+    section.bulletProvenance ?? null,
   );
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
@@ -138,13 +147,30 @@ export function SectionEditor({
   async function handleRemoveBullet(index: number) {
     const newBullets = finalBullets.filter((_, i) => i !== index);
     const newSources: Record<string, BulletSource> = {};
+    const newProvenance: NonNullable<EvalSection["bulletProvenance"]> = {};
     newBullets.forEach((_, i) => {
-      const oldSrc = bulletSources[String(i < index ? i : i + 1)];
+      const oldIndex = String(i < index ? i : i + 1);
+      const oldSrc = bulletSources[oldIndex];
       if (oldSrc) newSources[String(i)] = oldSrc;
+      const oldProv = bulletProvenance?.[oldIndex];
+      if (oldProv) newProvenance[String(i)] = oldProv;
     });
     setFinalBullets(newBullets);
     setBulletSources(newSources);
-    await save({ finalBullets: newBullets, bulletSources: newSources });
+    setBulletProvenance(newProvenance);
+    await save({ finalBullets: newBullets, bulletSources: newSources, bulletProvenance: newProvenance });
+  }
+
+  /**
+   * A suggestion accept/edit is now one atomic server-side transaction
+   * (MVP audit 5.8) — it already appended the bullet + provenance to the
+   * section row. Apply that authoritative result directly instead of
+   * re-deriving it client-side and firing a second PATCH.
+   */
+  function handleSectionUpdatedFromServer(updated: EvalSection) {
+    setFinalBullets(updated.finalBullets ?? []);
+    setBulletSources((updated.bulletSources as Record<string, BulletSource>) ?? {});
+    setBulletProvenance(updated.bulletProvenance ?? null);
   }
 
   async function handleMarkComplete() {
@@ -277,6 +303,7 @@ export function SectionEditor({
                     key={i}
                     text={bullet}
                     source={bulletSources[String(i)] ?? "HUMAN"}
+                    provenance={bulletProvenance?.[String(i)] ?? null}
                     onEdit={() => setEditingIndex(i)}
                     onRemove={() => handleRemoveBullet(i)}
                   />
@@ -309,8 +336,28 @@ export function SectionEditor({
               evalId={evalId}
               sectionKey={section.section as SectionKey}
               suggestions={localSuggestions}
-              onAccept={(text) => handleAddBullet(text, "AI_UNMODIFIED")}
+              onSectionUpdated={handleSectionUpdatedFromServer}
               onSuggestionsChange={handleSuggestionsChange}
+            />
+
+            {/* Soldier Accomplishments — generate from soldier-logged entries + artifacts */}
+            <SoldierAccomplishmentsPanel
+              evalId={evalId}
+              sectionKey={section.section as SectionKey}
+              entries={supportFormEntries}
+              soldierInfo={
+                soldierInfo ?? { rank: "SGT", mos: "11B", dutyTitle: "Soldier", formType: "NCOER_9_1" }
+              }
+              onSuggestions={(newSuggestions) => {
+                const merged = [
+                  ...localSuggestions.filter(
+                    (s) => !newSuggestions.some((n) => n.id === s.id),
+                  ),
+                  ...newSuggestions,
+                ];
+                handleSuggestionsChange(merged);
+                setAiPanelOpen(true);
+              }}
             />
 
             {/* From-scratch generation */}
@@ -356,6 +403,8 @@ export function SectionEditor({
                 </div>
               </div>
             )}
+
+            {generatingScratch && <BulletSkeleton count={2} />}
           </div>
         )}
       </div>

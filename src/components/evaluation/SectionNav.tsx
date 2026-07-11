@@ -11,6 +11,7 @@ export interface SectionNavProps {
 const STEPS: { slug: string; label: string }[] = [
   { slug: "admin", label: "Admin Data" },
   { slug: "duty", label: "Duty Description" },
+  { slug: "timeline", label: "Timeline" },
   { slug: "character", label: "Character" },
   { slug: "presence", label: "Presence" },
   { slug: "intellect", label: "Intellect" },

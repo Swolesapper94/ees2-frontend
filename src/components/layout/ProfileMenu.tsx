@@ -1,14 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  User,
   Settings,
   LifeBuoy,
   LogOut,
   UserCircle,
   RefreshCw,
   Bug,
-  Trash2,
 } from "lucide-react";
 import { SupportChatModal } from "@/components/support/SupportChatModal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -20,6 +18,7 @@ interface DevAuthUser {
   lastName?: string;
   rank?: string;
   email?: string;
+  profilePictureUrl?: string | null;
 }
 
 function getDevUser(): DevAuthUser | null {
@@ -44,10 +43,18 @@ export function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [seedingNotifications, setSeedingNotifications] = useState(false);
+  const [fullUser, setFullUser] = useState<DevAuthUser | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const devUser = getDevUser();
   const isDev = process.env.NODE_ENV !== "production";
+
+  // Fetch full user data with profile picture URL
+  useEffect(() => {
+    if (devUser?.email) {
+      api.get<DevAuthUser>("/users/me").then(setFullUser).catch(console.error);
+    }
+  }, [devUser?.email]);
 
   // Close on outside click
   useEffect(() => {
@@ -80,19 +87,6 @@ export function ProfileMenu() {
       window.location.reload();
     } catch {
       alert("Failed to seed notifications");
-    } finally {
-      setSeedingNotifications(false);
-    }
-  }
-
-  async function clearAllNotifications() {
-    if (!confirm("Clear all notifications?")) return;
-    setSeedingNotifications(true);
-    try {
-      await api.post("/dev/clear-notifications", {});
-      window.location.reload();
-    } catch {
-      alert("Failed to clear notifications");
     } finally {
       setSeedingNotifications(false);
     }
@@ -147,6 +141,7 @@ export function ProfileMenu() {
           className="flex items-center justify-center rounded-full transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <UserAvatar
+            src={fullUser?.profilePictureUrl}
             initials={getInitials(devUser)}
             size="md"
           />
@@ -158,6 +153,7 @@ export function ProfileMenu() {
             <div className="border-b border-border px-3 py-3">
               <div className="flex items-center gap-2.5">
                 <UserAvatar
+                  src={fullUser?.profilePictureUrl}
                   initials={getInitials(devUser)}
                   size="sm"
                 />
@@ -236,19 +232,6 @@ export function ProfileMenu() {
                       {seedingNotifications
                         ? "Loading..."
                         : "📧 Test Notifications"}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={seedingNotifications}
-                    onClick={() =>
-                      handleOption(clearAllNotifications)
-                    }
-                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
-                  >
-                    <Trash2 className="h-4 w-4 flex-shrink-0 text-red-600" />
-                    <span className="text-sm font-medium text-red-600">
-                      Clear All
                     </span>
                   </button>
                   <div className="border-t border-border" />

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api/client";
+import { useState } from "react";
+import { useApiGet } from "@/lib/api/hooks";
 import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FormationSoldier {
   id: string;
@@ -16,6 +17,9 @@ interface FormationSoldier {
   evalId?: string | null;
   overdueMilestoneCount: number;
   isOverdue: boolean;
+  hasChainGap: boolean;
+  lastChainRater?: { firstName: string; lastName: string; rank: string } | null;
+  lastChainEndDate?: string | null;
 }
 
 interface FormationData {
@@ -25,6 +29,7 @@ interface FormationData {
     completeCount: number;
     completePercent: number;
     overdueCount: number;
+    chainGapCount: number;
   };
 }
 
@@ -42,21 +47,37 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
 };
 
 export default function CommanderPage() {
-  const [data, setData] = useState<FormationData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, error, isLoading } = useApiGet<FormationData>("/commander/formation");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    api
-      .get<FormationData>("/commander/formation")
-      .then(setData)
-      .catch((err) => setError(err.status === 403 ? "Commander role required." : "Could not load formation."))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <div className="p-6 text-sm text-muted-foreground">Loading formation…</div>;
-  if (error || !data) return <div className="p-6 text-sm text-red-600">{error}</div>;
+  if (isLoading) return (
+    <div className="p-6 space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-sm border border-border bg-card p-4 space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-9 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="space-y-2">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="rounded-sm border border-border bg-card p-4 flex items-center justify-between">
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+            <Skeleton className="h-6 w-20" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+  if (error || !data) return <div className="p-6 text-sm text-red-600">API error {error?.status ?? 'Unknown'}: {error?.message ?? 'Failed to load formation'}</div>;
 
   const filtered = data.formation.filter((s) => {
     const q = search.toLowerCase();
@@ -79,8 +100,38 @@ export default function CommanderPage() {
         </p>
       </div>
 
+      {/* Chain-gap alert — Soldiers whose most recent rating chain ended
+          with no active replacement (PCS/change-of-rater gap, a recurring
+          appeals-driving failure mode called out in product research). */}
+      {stats.chainGapCount > 0 && (
+        <div className="rounded-sm border border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-800">
+            ⚠️ {stats.chainGapCount} Soldier{stats.chainGapCount !== 1 ? "s" : ""} with an open rating-chain gap
+          </p>
+          <p className="mt-1 text-xs text-amber-700">
+            These Soldiers&apos; most recent rating chain ended with no active
+            replacement assigned — the exact PCS/change-of-rater gap that
+            drives NCOER appeals when left undocumented. Assign a new chain
+            promptly.
+          </p>
+          <ul className="mt-2 space-y-1">
+            {data.formation.filter((s) => s.hasChainGap).map((s) => (
+              <li key={s.id} className="text-xs text-amber-800">
+                <span className="font-medium">{s.rank} {s.lastName}, {s.firstName}</span>
+                {s.lastChainRater && (
+                  <> — last rated by {s.lastChainRater.rank} {s.lastChainRater.lastName}</>
+                )}
+                {s.lastChainEndDate && (
+                  <> (chain ended {format(new Date(s.lastChainEndDate), "d MMM yyyy")})</>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Stat bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="rounded-sm border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Soldiers</p>
           <p className="text-3xl font-bold mt-0.5">{stats.totalSoldiers}</p>
@@ -100,6 +151,10 @@ export default function CommanderPage() {
           <p className="text-3xl font-bold mt-0.5">
             {data.formation.filter((s) => s.evalStatus === "NOT_STARTED").length}
           </p>
+        </div>
+        <div className={`rounded-sm border p-4 ${stats.chainGapCount > 0 ? "border-amber-200 bg-amber-50" : "border-border bg-card"}`}>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Chain Gaps</p>
+          <p className={`text-3xl font-bold mt-0.5 ${stats.chainGapCount > 0 ? "text-amber-700" : ""}`}>{stats.chainGapCount}</p>
         </div>
       </div>
 
@@ -131,6 +186,11 @@ export default function CommanderPage() {
                   <td className="py-2 px-3 font-medium">
                     {s.isOverdue && (
                       <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 shrink-0" title="Overdue milestone" />
+                    )}
+                    {s.hasChainGap && (
+                      <span className="inline-block rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 mr-2" title="No active rating chain">
+                        Gap
+                      </span>
                     )}
                     {s.rank} {s.lastName}, {s.firstName}
                   </td>

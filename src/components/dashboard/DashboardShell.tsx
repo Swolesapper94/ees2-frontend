@@ -2,6 +2,8 @@
 
 import { MyEvalCard } from "@/components/dashboard/MyEvalCard";
 import { SoldierGrid } from "@/components/dashboard/SoldierGrid";
+import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
+import { MyRatingTrendPanel } from "@/components/dashboard/MyRatingTrendPanel";
 import type { SoldierCardData } from "@/components/dashboard/SoldierCard";
 import type { EvalFormType } from "@/types/evaluation";
 import { DelegatedAccessSection } from "@/components/delegates/DelegatedAccessSection";
@@ -41,10 +43,19 @@ interface MyChainData {
   builderAvailable: boolean;
 }
 
+interface MyUser {
+  firstName: string;
+  lastName: string;
+  rank: string;
+  profilePictureUrl?: string | null;
+}
+
 export interface DashboardShellProps {
   myChain: MyChainData | null;
   soldierChains: SoldierCardData[];
   userRoles: string[];
+  myUser?: MyUser;
+  dashboardRecap: string;
 }
 
 /**
@@ -53,10 +64,19 @@ export interface DashboardShellProps {
  * Zone B (My Soldiers) only renders when soldierChains.length > 0.
  * Zone C (Delegated Access) only renders when delegate records exist.
  */
-export function DashboardShell({ myChain, soldierChains, userRoles }: DashboardShellProps) {
+export function DashboardShell({ myChain, soldierChains, userRoles, myUser, dashboardRecap }: DashboardShellProps) {
   return (
     <div className="flex flex-col gap-8 p-6">
-      {/* Analytics Header — above Zone A and Zone B */}
+      {myUser && (
+        <DashboardGreeting
+          firstName={myUser.firstName}
+          lastName={myUser.lastName}
+          rank={myUser.rank}
+          profilePictureUrl={myUser.profilePictureUrl}
+          recap={dashboardRecap}
+        />
+      )}
+
       <DashboardAnalyticsHeader userRoles={userRoles} />
 
       {/* Zone A — My Evaluation */}
@@ -82,6 +102,10 @@ export function DashboardShell({ myChain, soldierChains, userRoles }: DashboardS
           to a rating chain.
         </div>
       )}
+
+      {/* Self-referential trend — the Soldier's own rating history, never
+          compared to peers. Renders nothing until ≥2 finalized evals exist. */}
+      <MyRatingTrendPanel />
 
       {/* Zone B — My Soldiers (only when present) */}
       <SoldierGrid soldierChains={soldierChains} />

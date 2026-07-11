@@ -7,7 +7,7 @@ import { ProfileMeter } from "@/components/senior-rater/ProfileMeter";
 import { SuccessionPlanForm } from "@/components/senior-rater/SuccessionPlanForm";
 import { Button } from "@/components/ui/button";
 import type { SeniorRaterRating } from "@/types/evaluation";
-import { SENIOR_RATER_LABELS, SR_MQ_THRESHOLD } from "@/lib/utils/form-constants";
+import { SENIOR_RATER_LABELS } from "@/lib/utils/form-constants";
 
 const SR_OPTIONS: SeniorRaterRating[] = [
   "MOST_QUALIFIED",
@@ -16,24 +16,33 @@ const SR_OPTIONS: SeniorRaterRating[] = [
   "NOT_QUALIFIED",
 ];
 
+interface SrMqProfile {
+  grade: string;
+  isNco: boolean;
+  capPercent: number;
+  mqCount: number;
+  total: number;
+  mqPct: number;
+}
+
 export default function SeniorRaterPage() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();
 
   const [rating, setRating] = useState<SeniorRaterRating | null>(null);
-  const [profile, setProfile] = useState<Record<string, number>>({});
+  const [srMqProfile, setSrMqProfile] = useState<SrMqProfile | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     api
-      .get<{ seniorRaterRating: SeniorRaterRating | null; seniorRaterProfile: { profileData?: Record<string, number> } | null }>(
+      .get<{ seniorRaterRating: SeniorRaterRating | null; srMqProfile: SrMqProfile }>(
         `/evaluations/${id}`,
       )
       .then((d) => {
         setRating(d.seniorRaterRating);
-        setProfile(d.seniorRaterProfile?.profileData ?? {});
+        setSrMqProfile(d.srMqProfile);
       });
   }, [id]);
 
@@ -45,10 +54,18 @@ export default function SeniorRaterPage() {
     setTimeout(() => setSaved(false), 2000);
   }
 
-  const mqPct = profile.MQ_count != null && profile.total != null && profile.total > 0
-    ? profile.MQ_count / profile.total
+  // Project forward: if the SR is about to save a MOST_QUALIFIED rating,
+  // what would the grade's MQ rate become including this eval?
+  const projectedMqPct = srMqProfile
+    ? rating === "MOST_QUALIFIED"
+      ? Math.round(((srMqProfile.mqCount + 1) / (srMqProfile.total + 1)) * 100)
+      : srMqProfile.mqPct
     : null;
-  const mqWarning = rating === "MOST_QUALIFIED" && mqPct !== null && mqPct > SR_MQ_THRESHOLD;
+  const mqWarning =
+    rating === "MOST_QUALIFIED" &&
+    srMqProfile !== null &&
+    projectedMqPct !== null &&
+    projectedMqPct > srMqProfile.capPercent;
 
   return (
     <div className="max-w-lg">
@@ -57,18 +74,19 @@ export default function SeniorRaterPage() {
         Part V — potential assessment and profile constraint check.
       </p>
 
-      {Object.keys(profile).length > 0 && (
+      {srMqProfile && srMqProfile.total > 0 && (
         <div className="mb-5">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Your Senior Rater Profile
+            Your Senior Rater Profile — {srMqProfile.grade} ({srMqProfile.isNco ? "NCO" : "Officer/WO"})
           </h3>
           <ProfileMeter
-            mostQualified={profile.MQ_count ?? 0}
-            total={profile.total ?? 0}
+            mostQualified={srMqProfile.mqCount}
+            total={srMqProfile.total}
+            capPercent={srMqProfile.capPercent}
           />
           {mqWarning && (
             <p className="mt-2 rounded-sm border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
-              ⚠️  Giving MQ to {`>${Math.round(SR_MQ_THRESHOLD * 100)}%`} of your rated soldiers may flag a grade inflation concern.
+              ⚠️  Saving MOST QUALIFIED would put your {srMqProfile.grade} rate at {projectedMqPct}% — AR 623-3 caps {srMqProfile.isNco ? "NCO" : "Officer/WO"} Senior Raters at {srMqProfile.capPercent}%. You can still save this if it's genuinely earned — this is a transparency flag, not a hard block.
             </p>
           )}
         </div>

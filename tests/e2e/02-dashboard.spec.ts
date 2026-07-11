@@ -13,6 +13,7 @@ test.describe("Dashboard – Soldier persona", () => {
   });
 
   test("shows page title", async ({ page }) => {
+    // The h1 is rendered in both loading and loaded states
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
 

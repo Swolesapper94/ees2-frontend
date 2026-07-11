@@ -91,11 +91,13 @@ test.describe("Unauthenticated redirect", () => {
     await page.goto("/");
     await page.evaluate(() => localStorage.removeItem("devAuth"));
     await page.goto("/dashboard");
+    // Wait for async auth check / API call to settle
+    await page.waitForLoadState("networkidle");
     // Either redirected to login or page contains an auth error
     const url = page.url();
     const body = await page.textContent("body");
     const isRedirected = url.includes("/login") || url.includes("/dev-login");
-    const hasError = body?.includes("401") || body?.includes("log in");
+    const hasError = body?.includes("401") || body?.includes("log in") || body?.includes("Unauthorized");
     expect(isRedirected || hasError).toBeTruthy();
   });
 });

@@ -8,7 +8,6 @@ import {
   Users,
   ClipboardList,
   FileText,
-  BarChart2,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -70,7 +69,6 @@ export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProp
         )}
 
         <NavItem href="/all-evaluations" label="All Evaluations" icon={FileText} />
-        <NavItem href="/analytics" label="Analytics" icon={BarChart2} />
         <NavItem href="/admin/users" label="Admin" icon={Settings} />
       </nav>
     </aside>

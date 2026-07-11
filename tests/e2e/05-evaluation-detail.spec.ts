@@ -22,6 +22,8 @@ test.describe("Evaluation – Admin (Part I) tab", () => {
   test("shows evaluation metadata for complete eval", async ({ page }) => {
     await loginAs(page, USERS.rater);
     await page.goto(`/evaluations/${EVALS.complete}/admin`);
+    // Wait for API data to load before asserting
+    await page.waitForLoadState("networkidle");
     await expect(page.getByRole("heading", { name: /administrative data/i })).toBeVisible();
   });
 
@@ -29,8 +31,8 @@ test.describe("Evaluation – Admin (Part I) tab", () => {
     await loginAs(page, USERS.rater);
     await page.goto(`/evaluations/${EVALS.complete}/admin`);
     await page.waitForLoadState("networkidle");
-    // SGT Smith should appear in the metadata table
-    await expect(page.getByText(/smith/i)).toBeVisible();
+    // SGT Smith should appear in the metadata table — scope to the table to avoid ambiguous matches
+    await expect(page.locator("table").getByText(/smith/i).first()).toBeVisible();
   });
 
   test("shows form type", async ({ page }) => {
@@ -83,8 +85,8 @@ test.describe("Evaluation – Part IV Section Editor", () => {
     await loginAs(page, USERS.rater);
     await page.goto(`/evaluations/${EVALS.inProgress}/CHARACTER`);
     await page.waitForLoadState("networkidle");
-    // The seeded eval has a bullet for CHARACTER
-    await expect(page.getByText(/integrity|UCMJ|standard/i)).toBeVisible();
+    // The seeded eval has a bullet for CHARACTER — use paragraph role to avoid matching Standard buttons
+    await expect(page.getByText(/integrity|UCMJ/i).first()).toBeVisible();
   });
 
   test("incomplete LEADS section shows editable state", async ({ page }) => {

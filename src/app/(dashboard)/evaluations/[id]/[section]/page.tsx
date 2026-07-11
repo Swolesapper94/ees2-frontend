@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { SECTION_LABELS } from "@/lib/utils/form-constants";
 import { SectionEditor } from "@/components/evaluation/SectionEditor";
 import { SupportFormUploadPanel } from "@/components/evaluation/SupportFormUploadPanel";
+import { RegulationReference } from "@/components/evaluation/RegulationReference";
+import { SectionSkeleton } from "@/components/evaluation/SectionSkeleton";
 import { api } from "@/lib/api/client";
 import type {
   EvalSection,
@@ -21,7 +23,7 @@ const NO_RATING_SECTIONS = new Set(["RATER_OVERALL", "SENIOR_RATER_OVERALL", "SO
 const PART_IV_SECTIONS = new Set(["CHARACTER", "PRESENCE", "INTELLECT", "LEADS", "DEVELOPS", "ACHIEVES"]);
 
 const SECTION_ORDER = [
-  "admin", "duty",
+  "admin", "duty", "timeline",
   "character", "presence", "intellect", "leads", "develops", "achieves",
   "senior-rater", "review", "sign",
 ];
@@ -94,6 +96,7 @@ export default function SectionPage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight">{label}</h1>
           <p className="text-sm text-muted-foreground">Part IV — Performance assessment</p>
+          {PART_IV_SECTIONS.has(sectionKey) && <RegulationReference sectionKey={sectionKey} />}
         </div>
         {section?.isComplete && (
           <span className="rounded-sm bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
@@ -102,8 +105,8 @@ export default function SectionPage() {
         )}
       </div>
 
-      {/* Support form upload panel — only on Part IV sections */}
-      {PART_IV_SECTIONS.has(sectionKey) && !loading && (
+      {/* Support form upload panel — only on Part IV sections and only before upload */}
+      {PART_IV_SECTIONS.has(sectionKey) && !loading && !uploadState.hasUpload && (
         <div className="mb-5 rounded-md border border-border bg-card p-4">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Soldier Support Form
@@ -116,9 +119,7 @@ export default function SectionPage() {
         </div>
       )}
 
-      {loading && (
-        <p className="text-sm text-muted-foreground">Loading section…</p>
-      )}
+      {loading && <SectionSkeleton />}
 
       {notFound && (
         <p className="rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
@@ -135,6 +136,7 @@ export default function SectionPage() {
           onSuggestionsChange={setAiSuggestions}
           ratingStyle={ratingStyle as "binary" | "four-level" | "none"}
           soldierInfo={soldierInfo}
+          supportFormEntries={evaluation?.supportForm?.entries ?? []}
         />
       )}
 

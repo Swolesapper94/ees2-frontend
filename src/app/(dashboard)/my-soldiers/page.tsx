@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api/client";
+import { useApiGet } from "@/lib/api/hooks";
 import type { Evaluation, EvalStatus } from "@/types/evaluation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RankInsignia } from "@/components/ui/RankInsignia";
+import { rankAbbr } from "@/lib/utils/army-ranks";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -30,6 +32,14 @@ const STATUS_COLORS: Record<EvalStatus, string> = {
   RETURNED: "bg-red-100 text-red-700",
 };
 
+interface CurrentUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+  rank: string;
+  email: string;
+}
+
 interface EvalWithChain extends Evaluation {
   ratingChain?: {
     ratedSoldier?: { firstName: string; lastName: string; rank: string };
@@ -37,21 +47,61 @@ interface EvalWithChain extends Evaluation {
   };
 }
 
-export default function MySoldiersPage() {
-  const [evals, setEvals] = useState<EvalWithChain[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface CounselingData {
+  overallPct: number;
+  byType: Record<string, { complete: number; total: number }>;
+  overdueSoldiers: Array<{ name: string; type: string }>;
+}
 
-  useEffect(() => {
-    api
-      .get<EvalWithChain[]>("/evaluations?role=rater")
-      .then(setEvals)
-      .catch(() => setError("Failed to load soldiers' evaluations"))
-      .finally(() => setLoading(false));
-  }, []);
+export default function MySoldiersPage() {
+  const { data: currentUser } = useApiGet<CurrentUser>("/users/me");
+  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations?role=rater");
+  const { data: counselingData } = useApiGet<CounselingData>("/dashboard/counseling");
 
   return (
     <div className="p-6">
+      {/* Current User Card */}
+      {isLoading && !currentUser ? (
+        <div className="mb-6 rounded-sm border border-border bg-card p-4">
+          <Skeleton className="h-6 w-64" />
+        </div>
+      ) : currentUser ? (
+        <div className="mb-6 rounded-sm border-2 border-primary/50 bg-primary/5 p-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">You</p>
+          <div className="mt-2 flex items-center gap-3">
+            <RankInsignia rank={currentUser.rank} size="md" />
+            <div>
+              <p className="font-semibold">
+                {rankAbbr(currentUser.rank)} {currentUser.lastName}, {currentUser.firstName}
+              </p>
+              <p className="text-xs text-muted-foreground">{currentUser.email}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Counseling Overdue Alert */}
+      {counselingData && counselingData.overdueSoldiers.length > 0 && (
+        <div className="mb-6 rounded-sm border-l-4 border-l-red-500 border border-red-200 bg-red-50 p-4">
+          <p className="text-sm font-semibold text-red-900">
+            ⚠️ {counselingData.overdueSoldiers.length} soldier{counselingData.overdueSoldiers.length !== 1 ? 's' : ''} with overdue counseling
+          </p>
+          <div className="mt-3 space-y-2">
+            {counselingData.overdueSoldiers.map((s, i) => (
+              <p key={i} className="text-xs text-red-800">
+                • <span className="font-medium">{s.name}</span> — {s.type.replace(/_/g, ' ').toLowerCase()}
+              </p>
+            ))}
+          </div>
+          <div className="mt-3">
+            <p className="text-xs text-red-700 mb-2">
+              Counseling compliance: <span className="font-semibold">{counselingData.overallPct}%</span> complete
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Soldiers Section */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">My Soldiers</h1>
@@ -64,16 +114,26 @@ export default function MySoldiersPage() {
         </Button>
       </div>
 
-      {loading && (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+      {isLoading && (
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="rounded-sm border border-border bg-card p-4 flex items-center justify-between">
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-6 w-24" />
+            </div>
+          ))}
+        </div>
       )}
       {error && (
         <div className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
+          API error {error.status}: {error.message}
         </div>
       )}
 
-      {!loading && !error && evals.length === 0 && (
+      {!isLoading && !error && evals.length === 0 && (
         <div className="rounded-sm border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No evaluations found where you are the rater.
@@ -88,22 +148,26 @@ export default function MySoldiersPage() {
         <div className="space-y-3">
           {evals.map((e) => {
             const soldier = e.ratingChain?.ratedSoldier;
-            const name = soldier
-              ? `${soldier.lastName}, ${soldier.firstName} (${soldier.rank})`
-              : e.id;
             return (
               <Link
                 key={e.id}
                 href={`/evaluations/${e.id}/admin`}
                 className="flex items-center justify-between rounded-sm border border-border bg-card p-4 hover:bg-accent transition-colors"
               >
-                <div>
-                  <p className="font-medium">{name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {e.formType.replace(/_/g, "-")} · Period:{" "}
-                    {e.periodStart?.toString().slice(0, 10)} →{" "}
-                    {e.periodEnd?.toString().slice(0, 10)}
-                  </p>
+                <div className="flex items-center gap-3">
+                  {soldier && <RankInsignia rank={soldier.rank} size="md" />}
+                  <div>
+                    <p className="font-medium">
+                      {soldier
+                        ? `${rankAbbr(soldier.rank)} ${soldier.lastName}, ${soldier.firstName}`
+                        : e.id}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {e.formType.replace(/_/g, "-")} · Period:{" "}
+                      {e.periodStart?.toString().slice(0, 10)} →{" "}
+                      {e.periodEnd?.toString().slice(0, 10)}
+                    </p>
+                  </div>
                 </div>
                 <span
                   className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}

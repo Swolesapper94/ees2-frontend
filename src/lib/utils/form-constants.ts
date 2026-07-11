@@ -24,6 +24,7 @@ export const SECTION_LABELS: Record<string, string> = {
   RATER_OVERALL: "Rater Overall",
   SENIOR_RATER_OVERALL: "Senior Rater Overall",
   SOLDIER_COMMENTS: "Soldier Comments",
+  TIMELINE: "Timeline",
 };
 
 export const RATING_BINARY_LABELS: Record<RatingBinary, string> = {
@@ -47,4 +48,8 @@ export const SENIOR_RATER_LABELS: Record<SeniorRaterRating, string> = {
 
 export const BULLET_MAX_CHARS = 200;
 
-export const SR_MQ_THRESHOLD = 0.5;
+// AR 623-3 Senior Rater MQ cap is grade-dependent (24% NCO / 50% Officer/WO)
+// — see `srMqCapPercentFor()` in the backend's lib/utils/grade.ts, whose
+// output (`capPercent`) is now returned directly by `GET /evaluations/:id`
+// as part of `srMqProfile`. No flat frontend constant anymore — a single
+// number here can't represent both grade bands correctly.

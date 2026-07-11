@@ -81,6 +81,18 @@ export type SupportFormUploadStatus =
 export type AIBulletStatus = "PENDING_REVIEW" | "ACCEPTED" | "EDITED" | "REJECTED";
 export type AIBulletConfidence = "HIGH" | "MEDIUM" | "LOW";
 
+export interface BulletSourceSnapshotEntry {
+  entryId: string;
+  rawText: string;
+  artifactCaptions: string[];
+}
+
+export interface UnsupportedClaim {
+  claimText: string;
+  claimType: "NUMBER" | "PERCENTAGE" | "DATE" | "SCHOOL" | "AWARD" | "RANKING";
+  reason: string;
+}
+
 export interface AIBulletSuggestion {
   id: string;
   evaluationId: string;
@@ -94,6 +106,8 @@ export interface AIBulletSuggestion {
   reviewedById: string | null;
   reviewedAt: string | null;
   sourceEntryIds: string[];
+  sourceSnapshot: BulletSourceSnapshotEntry[] | null;
+  unsupportedClaims: UnsupportedClaim[] | null;
   createdAt: string;
 }
 
@@ -119,6 +133,77 @@ export interface SupportFormUploadState {
   bulletSuggestions?: AIBulletSuggestion[];
 }
 
+// ── Guided Support Form Flow \u2014 entries + artifacts ────────────────────────
+
+export type ArtifactType = "CERTIFICATE" | "SCORE_SHEET" | "PHOTO" | "DOCUMENT" | "OTHER";
+export type ArtifactCaptionStatus = "PENDING" | "COMPLETE" | "FAILED";
+export type EntryConfirmationStatus =
+  | "UNREVIEWED"
+  | "CONFIRMED"
+  | "NEEDS_CLARIFICATION"
+  | "NOT_USED";
+
+export interface SupportFormEntryArtifact {
+  id: string;
+  entryId: string;
+  type: ArtifactType;
+  fileUrl: string;
+  fileType: string; // "image" | "pdf"
+  aiCaption: string | null;
+  aiCaptionStatus: ArtifactCaptionStatus;
+  aiCaptionError: string | null;
+  flaggedByServiceMember: boolean;
+  flagNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportFormEntry {
+  id: string;
+  supportFormId: string;
+  entryDate: string;
+  section: SectionKey;
+  entryType: EntryType;
+  rawText: string;
+  tags: string[];
+  isHighlight: boolean;
+  counseled: boolean;
+  counseledDate: string | null;
+  usedInEvalId: string | null;
+  confirmationStatus: EntryConfirmationStatus;
+  confirmedById: string | null;
+  confirmedAt: string | null;
+  clarificationNote: string | null;
+  artifacts: SupportFormEntryArtifact[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SupportForm {
+  id: string;
+  soldierId: string;
+  ratingChainId: string | null;
+  evalCategory: "NCOER" | "OER" | null;
+  ratingPeriodStart: string;
+  ratingPeriodEnd: string | null;
+  dutyTitle: string;
+  dutyMosc: string | null;
+  dailyDutiesScope: string | null;
+  areasOfEmphasis: string | null;
+  appointedDuties: string | null;
+  ssdNcoesMet: boolean | null;
+  soldierGoals: string | null;
+  isActive: boolean;
+  completedAt: string | null;
+  entries: SupportFormEntry[];
+}
+
+export interface BulletProvenanceEntry {
+  suggestionId: string;
+  sourceEntryIds: string[];
+  sourceSnapshot: BulletSourceSnapshotEntry[] | null;
+}
+
 export interface EvalSection {
   id: string;
   section: SectionKey;
@@ -127,6 +212,7 @@ export interface EvalSection {
   stagingBullets: string[];
   finalBullets: string[];
   bulletSources: Record<string, BulletSource> | null;
+  bulletProvenance: Record<string, BulletProvenanceEntry> | null;
   isComplete: boolean;
 }
 
@@ -139,11 +225,18 @@ export interface Evaluation {
   principalDutyTitle: string | null;
   seniorRaterRating: SeniorRaterRating | null;
   sections?: EvalSection[];
+  supportFormId?: string | null;
+  supportForm?: SupportForm | null;
 }
 
 export interface ConsistencyFlag {
   code: string;
-  severity: "ERROR" | "WARNING" | "INFO";
+  // MVP audit 5.14 — severity taxonomy expanded from flat ERROR/WARNING/INFO.
+  // BLOCKING_ERROR must be fixed before proceeding; CONFIRMATION_REQUIRED
+  // must be explicitly acknowledged (like WARNING) but represents a
+  // stronger risk (e.g. an unsupported factual claim) that the backend
+  // treats as more serious than a soft warning.
+  severity: "BLOCKING_ERROR" | "CONFIRMATION_REQUIRED" | "WARNING" | "INFO";
   section?: string;
   message: string;
   resolvable: boolean;

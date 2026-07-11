@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { api, ApiError } from "@/lib/api/client";
+import { useApiGet } from "@/lib/api/hooks";
 import type { Evaluation, EvalStatus } from "@/types/evaluation";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RankInsignia } from "@/components/ui/RankInsignia";
+import { rankAbbr } from "@/lib/utils/army-ranks";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -37,23 +39,7 @@ interface EvalWithChain extends Evaluation {
 }
 
 export default function EvaluationsPage() {
-  const [evals, setEvals] = useState<EvalWithChain[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .get<EvalWithChain[]>("/evaluations")
-      .then(setEvals)
-      .catch((e) => {
-        setError(
-          e instanceof ApiError
-            ? `API error ${e.status}: ${e.message}`
-            : "Failed to load evaluations",
-        );
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations");
 
   return (
     <div className="p-6">
@@ -69,25 +55,26 @@ export default function EvaluationsPage() {
         </Button>
       </div>
 
-      {loading && (
-        <p className="text-sm text-muted-foreground">Loading evaluations…</p>
+      {isLoading && (
+        <div className="space-y-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="rounded-sm border border-border bg-card p-4 flex items-center justify-between">
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-6 w-24" />
+            </div>
+          ))}
+        </div>
       )}
       {error && (
         <div className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {error}
-          <p className="mt-1 text-xs">
-            Make sure you are logged in:{" "}
-            <Link
-              href="/?dev=james.smith@army.mil:testpass"
-              className="underline"
-            >
-              log in as SGT Smith
-            </Link>
-          </p>
+          API error {error.status}: {error.message}
         </div>
       )}
 
-      {!loading && !error && evals.length === 0 && (
+      {!isLoading && !error && evals.length === 0 && (
         <div className="rounded-sm border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">No evaluations yet.</p>
           <Button asChild className="mt-4">
@@ -100,22 +87,26 @@ export default function EvaluationsPage() {
         <div className="space-y-3">
           {evals.map((e) => {
             const soldier = e.ratingChain?.ratedSoldier;
-            const name = soldier
-              ? `${soldier.lastName}, ${soldier.firstName} (${soldier.rank})`
-              : e.id;
             return (
               <Link
                 key={e.id}
                 href={`/evaluations/${e.id}/admin`}
                 className="flex items-center justify-between rounded-sm border border-border bg-card p-4 hover:bg-accent transition-colors"
               >
-                <div>
-                  <p className="font-medium">{name}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {e.formType.replace(/_/g, "-")} · Period:{" "}
-                    {e.periodStart?.toString().slice(0, 10)} →{" "}
-                    {e.periodEnd?.toString().slice(0, 10)}
-                  </p>
+                <div className="flex items-center gap-3">
+                  {soldier && <RankInsignia rank={soldier.rank} size="md" />}
+                  <div>
+                    <p className="font-medium">
+                      {soldier
+                        ? `${rankAbbr(soldier.rank)} ${soldier.lastName}, ${soldier.firstName}`
+                        : e.id}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {e.formType.replace(/_/g, "-")} · Period:{" "}
+                      {e.periodStart?.toString().slice(0, 10)} →{" "}
+                      {e.periodEnd?.toString().slice(0, 10)}
+                    </p>
+                  </div>
                 </div>
                 <span
                   className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}

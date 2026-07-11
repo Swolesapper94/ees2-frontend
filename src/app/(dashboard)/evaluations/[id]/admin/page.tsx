@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface AdminData {
   id: string;
@@ -32,7 +33,20 @@ export default function AdminDataPage() {
     api.get<AdminData>(`/evaluations/${id}`).then(setData).finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (loading) return (
+    <div className="space-y-4">
+      <Skeleton className="h-7 w-48" />
+      <Skeleton className="h-4 w-56" />
+      <div className="rounded-sm border border-border overflow-hidden">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="flex border-b border-border last:border-0">
+            <div className="w-40 bg-muted/30 px-4 py-2"><Skeleton className="h-4 w-24" /></div>
+            <div className="px-4 py-2 flex-1"><Skeleton className="h-4 w-32" /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (!data) return <p className="text-sm text-red-600">Evaluation not found.</p>;
 
   const s = data.ratingChain.ratedSoldier;

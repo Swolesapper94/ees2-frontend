@@ -19,13 +19,19 @@ async function authHeader(): Promise<Record<string, string>> {
     if (devAuth) return { Authorization: devAuth };
   }
 
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token
-    ? { Authorization: `Bearer ${session.access_token}` }
-    : {};
+  // Try to get Supabase session, but gracefully handle if not available
+  try {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
+  } catch {
+    // Supabase not configured; return empty headers (dev mode relies on devAuth)
+    return {};
+  }
 }
 
 interface RequestOptions {

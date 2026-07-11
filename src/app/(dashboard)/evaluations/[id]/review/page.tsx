@@ -7,6 +7,7 @@ import { ConsistencyCheckModal } from "@/components/evaluation/ConsistencyCheckM
 import type { ConsistencyFlag, EvalSection, EvalStatus } from "@/types/evaluation";
 import { SECTION_LABELS, RATING_BINARY_LABELS, RATING_FOUR_LEVEL_LABELS } from "@/lib/utils/form-constants";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -78,7 +79,26 @@ export default function ReviewPage() {
       });
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (loading) return (
+    <div className="max-w-2xl space-y-4">
+      <Skeleton className="h-7 w-24" />
+      <Skeleton className="h-4 w-56" />
+      <div className="rounded-sm border border-border bg-card p-4">
+        <div className="grid grid-cols-2 gap-2">
+          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}
+        </div>
+      </div>
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="rounded-sm border border-border p-3 space-y-2">
+          <div className="flex justify-between">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+          <Skeleton className="h-3 w-full" />
+        </div>
+      ))}
+    </div>
+  );
   if (!evalData) return <p className="text-sm text-red-600">Evaluation not found.</p>;
 
   const s = evalData.ratingChain.ratedSoldier;

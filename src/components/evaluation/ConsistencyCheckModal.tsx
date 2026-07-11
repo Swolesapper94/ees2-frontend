@@ -15,13 +15,15 @@ export interface ConsistencyCheckModalProps {
 }
 
 const SEVERITY_STYLES: Record<string, string> = {
-  ERROR: "border-red-200 bg-red-50 text-red-900",
+  BLOCKING_ERROR: "border-red-200 bg-red-50 text-red-900",
+  CONFIRMATION_REQUIRED: "border-purple-200 bg-purple-50 text-purple-900",
   WARNING: "border-amber-200 bg-amber-50 text-amber-900",
   INFO: "border-blue-200 bg-blue-50 text-blue-900",
 };
 
 const SEVERITY_ICON: Record<string, string> = {
-  ERROR: "✗",
+  BLOCKING_ERROR: "✗",
+  CONFIRMATION_REQUIRED: "⚑",
   WARNING: "⚠",
   INFO: "ℹ",
 };
@@ -33,7 +35,9 @@ const FLAG_LABELS: Record<string, string> = {
   EMPTY_SECTION: "Empty Section",
   COUNSELING_GAP: "Counseling Gap",
   SR_PROFILE_MQ_WARNING: "SR Profile — Grade Inflation Warning",
+  UNSUPPORTED_CLAIM: "Unsupported Claim",
   PROHIBITED_LANGUAGE: "Prohibited Language",
+  GENERIC_BULLET: "Generic Bullet — Add Specificity",
   BULLET_FORMAT: "Bullet Format Issue",
 };
 
@@ -72,12 +76,17 @@ export function ConsistencyCheckModal({
     }
   }
 
-  const errors = flags?.filter((f) => f.severity === "ERROR") ?? [];
+  const errors = flags?.filter((f) => f.severity === "BLOCKING_ERROR") ?? [];
+  const confirmations = flags?.filter((f) => f.severity === "CONFIRMATION_REQUIRED") ?? [];
   const warnings = flags?.filter((f) => f.severity === "WARNING") ?? [];
   const infos = flags?.filter((f) => f.severity === "INFO") ?? [];
   const hasErrors = errors.length > 0;
-  const unacknowledgedWarnings = warnings.filter((_, i) => !acknowledged.has(errors.length + i));
-  const canProceed = flags !== null && !hasErrors && unacknowledgedWarnings.length === 0;
+  // Confirmations and warnings both require an explicit checkbox ack before
+  // proceeding; indexed together (confirmations first, then warnings) since
+  // they share one `acknowledged` Set keyed by position in this combined list.
+  const ackRequired = [...confirmations, ...warnings];
+  const unacknowledged = ackRequired.filter((_, i) => !acknowledged.has(i));
+  const canProceed = flags !== null && !hasErrors && unacknowledged.length === 0;
 
   function toggleAcknowledge(globalIndex: number) {
     setAcknowledged((prev) => {
@@ -141,9 +150,9 @@ export function ConsistencyCheckModal({
               </p>
               <div className="space-y-2">
                 {errors.map((f, i) => (
-                  <div key={i} className={cn("rounded border p-3 text-sm", SEVERITY_STYLES.ERROR)}>
+                  <div key={i} className={cn("rounded border p-3 text-sm", SEVERITY_STYLES.BLOCKING_ERROR)}>
                     <div className="flex items-start gap-2">
-                      <span className="font-bold">{SEVERITY_ICON.ERROR}</span>
+                      <span className="font-bold">{SEVERITY_ICON.BLOCKING_ERROR}</span>
                       <div>
                         <p className="font-semibold">{FLAG_LABELS[f.code] ?? f.code}</p>
                         {f.section && <p className="text-xs opacity-75">Section: {f.section}</p>}
@@ -156,6 +165,48 @@ export function ConsistencyCheckModal({
             </div>
           )}
 
+          {confirmations.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-purple-700">
+                Requires Confirmation ({confirmations.length})
+              </p>
+              <div className="space-y-2">
+                {confirmations.map((f, i) => {
+                  const globalIndex = i;
+                  const isAcknowledged = acknowledged.has(globalIndex);
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        "rounded border p-3 text-sm",
+                        isAcknowledged ? "opacity-60 bg-muted border-border" : SEVERITY_STYLES.CONFIRMATION_REQUIRED,
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="font-bold text-purple-700">{SEVERITY_ICON.CONFIRMATION_REQUIRED}</span>
+                        <div className="flex-1">
+                          <p className="font-semibold">{FLAG_LABELS[f.code] ?? f.code}</p>
+                          {f.section && <p className="text-xs opacity-75">Section: {f.section}</p>}
+                          <p className="mt-0.5 text-xs">{f.message}</p>
+                          <label className="mt-2 flex cursor-pointer items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isAcknowledged}
+                              onChange={() => toggleAcknowledge(globalIndex)}
+                            />
+                            <span className="text-xs">
+                              I confirm I have reviewed this and am proceeding intentionally
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {warnings.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-700">
@@ -163,7 +214,7 @@ export function ConsistencyCheckModal({
               </p>
               <div className="space-y-2">
                 {warnings.map((f, i) => {
-                  const globalIndex = errors.length + i;
+                  const globalIndex = confirmations.length + i;
                   const isAcknowledged = acknowledged.has(globalIndex);
                   return (
                     <div
@@ -223,9 +274,9 @@ export function ConsistencyCheckModal({
             {flags !== null && hasErrors && (
               <p className="text-xs text-destructive">Fix {errors.length} error{errors.length !== 1 ? "s" : ""} first</p>
             )}
-            {flags !== null && !hasErrors && unacknowledgedWarnings.length > 0 && (
+            {flags !== null && !hasErrors && unacknowledged.length > 0 && (
               <p className="text-xs text-amber-700">
-                Acknowledge {unacknowledgedWarnings.length} warning{unacknowledgedWarnings.length !== 1 ? "s" : ""} to continue
+                Acknowledge/confirm {unacknowledged.length} item{unacknowledged.length !== 1 ? "s" : ""} to continue
               </p>
             )}
             <button
