@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
 import type { ArtifactType, SupportForm } from "@/types/evaluation";
@@ -41,6 +41,7 @@ interface ArtifactDraft {
 
 interface CurrentUser {
   id: string;
+  roles: string[];
 }
 
 function newDraft(): ArtifactDraft {
@@ -55,7 +56,11 @@ function newDraft(): ArtifactDraft {
 
 export default function NewEntryPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const formId = searchParams.get("formId");
+  const assisting = searchParams.get("assisting");
   const [form, setForm] = useState<SupportForm | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loadingForm, setLoadingForm] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -72,9 +77,17 @@ export default function NewEntryPage() {
     (async () => {
       try {
         const me = await api.get<CurrentUser>("/users/me");
+        setCurrentUser(me);
+        const active = formId
+          ? await api.get<SupportForm>(`/support-forms/${formId}`)
+          : (() => undefined)();
+        if (active) {
+          setForm(active);
+          return;
+        }
         const forms = await api.get<SupportForm[]>(`/support-forms?soldierId=${me.id}`);
-        const active = forms.find((f) => f.isActive && !f.completedAt) ?? forms[0] ?? null;
-        setForm(active);
+        const ownForm = forms.find((f) => f.isActive && !f.completedAt) ?? forms[0] ?? null;
+        setForm(ownForm);
       } catch {
         setLoadError("Failed to load your support form.");
       } finally {
@@ -82,6 +95,13 @@ export default function NewEntryPage() {
       }
     })();
   }, []);
+
+  const raterObjectiveOnly = Boolean(form && currentUser && !assisting && currentUser.id !== form.soldierId && !currentUser.roles.includes("ADMIN"));
+  const availableEntryTypes = raterObjectiveOnly ? ENTRY_TYPES.filter((type) => type.value === "OBJECTIVE") : ENTRY_TYPES;
+
+  useEffect(() => {
+    if (raterObjectiveOnly) setEntryType("OBJECTIVE");
+  }, [raterObjectiveOnly]);
 
   function addArtifact() {
     setArtifacts((prev) => [...prev, newDraft()]);
@@ -126,7 +146,7 @@ export default function NewEntryPage() {
         await api.upload(`/support-forms/${form.id}/entries/${entry.id}/artifacts`, fd);
       }
 
-      router.push("/support-form");
+      router.push(`/support-form${formId ? `?formId=${formId}${assisting ? `&assisting=${encodeURIComponent(assisting)}` : ""}` : ""}`);
     } catch {
       setSubmitError("Failed to save entry — try again.");
     } finally {
@@ -150,6 +170,8 @@ export default function NewEntryPage() {
 
   return (
     <div className="p-6 max-w-2xl">
+      {assisting && <p className="mb-4 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">You are drafting this entry while assisting the rated Soldier. Your name and grant will remain attached to the draft.</p>}
+      {raterObjectiveOnly && <p className="mb-4 rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">You are adding an objective for the rated Soldier as the assigned rater. Accomplishments and supporting evidence remain the Soldier&apos;s entries.</p>}
       <h1 className="mb-1 text-2xl font-bold tracking-tight">Log Entry</h1>
       <p className="mb-6 text-sm text-muted-foreground">
         Record an objective or accomplishment for the rating period.
@@ -160,7 +182,7 @@ export default function NewEntryPage() {
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium">Entry type</span>
           <div className="flex gap-2">
-            {ENTRY_TYPES.map((t) => (
+            {availableEntryTypes.map((t) => (
               <button
                 key={t.value}
                 type="button"
@@ -212,7 +234,7 @@ export default function NewEntryPage() {
         </div>
 
         {/* Artifacts */}
-        <div className="flex flex-col gap-2">
+        {!raterObjectiveOnly && <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Proof (optional)</span>
             <button
@@ -287,7 +309,7 @@ export default function NewEntryPage() {
               )}
             </div>
           ))}
-        </div>
+        </div>}
 
         {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 

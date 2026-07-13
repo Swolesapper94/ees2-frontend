@@ -59,6 +59,20 @@ export default function SectionPage() {
       .finally(() => setLoading(false));
   }, [id, sectionKey]);
 
+  useEffect(() => {
+    const processing = uploadState.hasUpload && uploadState.parseStatus && !["COMPLETE", "FAILED"].includes(uploadState.parseStatus);
+    if (!processing) return;
+    const interval = setInterval(() => {
+      api.get<SupportFormUploadState>(`/support-form-uploads/${id}/status`)
+        .then((state) => {
+          setUploadState(state);
+          setAiSuggestions(state.bulletSuggestions ?? []);
+        })
+        .catch(() => undefined);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [id, uploadState.hasUpload, uploadState.parseStatus]);
+
   const handleSave = useCallback(
     async (patch: Partial<EvalSection>) => {
       await api.patch(`/evaluations/${id}/sections/${sectionKey}`, patch);
@@ -81,6 +95,9 @@ export default function SectionPage() {
     : NO_RATING_SECTIONS.has(sectionKey)
       ? "none"
       : "four-level";
+  const isPipelineProcessing = Boolean(
+    uploadState.hasUpload && uploadState.parseStatus && !["COMPLETE", "FAILED"].includes(uploadState.parseStatus),
+  );
 
   const soldier = (evaluation as unknown as { ratingChain?: { ratedSoldier?: { rank?: string; mos?: string } } })?.ratingChain?.ratedSoldier;
   const soldierInfo = {
@@ -105,8 +122,8 @@ export default function SectionPage() {
         )}
       </div>
 
-      {/* Support form upload panel — only on Part IV sections and only before upload */}
-      {PART_IV_SECTIONS.has(sectionKey) && !loading && !uploadState.hasUpload && (
+      {/* Support form upload status and reprocess controls apply only to Part IV sections. */}
+      {PART_IV_SECTIONS.has(sectionKey) && !loading && (
         <div className="mb-5 rounded-md border border-border bg-card p-4">
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Soldier Support Form
@@ -127,7 +144,13 @@ export default function SectionPage() {
         </p>
       )}
 
-      {section && (
+      {section && isPipelineProcessing && (
+        <div className="rounded-sm border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Processing the uploaded support form. Performance sections will unlock after extraction, classification, and suggestion generation finish.
+        </div>
+      )}
+
+      {section && !isPipelineProcessing && (
         <SectionEditor
           section={section}
           evalId={id}
@@ -135,8 +158,12 @@ export default function SectionPage() {
           onSave={handleSave}
           onSuggestionsChange={setAiSuggestions}
           ratingStyle={ratingStyle as "binary" | "four-level" | "none"}
-          soldierInfo={soldierInfo}
+          soldierInfo={{
+            ...soldierInfo,
+            dutyTitle: evaluation?.principalDutyTitle ?? evaluation?.supportForm?.dutyTitle ?? "Soldier",
+          }}
           supportFormEntries={evaluation?.supportForm?.entries ?? []}
+          uploadedSupportFormFileType={uploadState.hasUpload ? uploadState.fileType : undefined}
         />
       )}
 

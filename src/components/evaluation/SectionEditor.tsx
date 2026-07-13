@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type {
   EvalSection,
   RatingBinary,
@@ -17,6 +17,7 @@ import { BulletCard } from "./BulletCard";
 import { AIBulletPanel } from "./AIBulletPanel";
 import { SoldierAccomplishmentsPanel } from "./SoldierAccomplishmentsPanel";
 import { BulletSkeleton } from "./BulletSkeleton";
+import { UploadedSupportFormViewer } from "./UploadedSupportFormViewer";
 import { api } from "@/lib/api/client";
 import { BULLET_MAX_CHARS } from "@/lib/utils/form-constants";
 import { cn } from "@/lib/utils/cn";
@@ -44,6 +45,8 @@ export interface SectionEditorProps {
   soldierInfo?: { rank: string; mos: string; dutyTitle: string; formType: string };
   /** Soldier-logged support form entries (guided flow) — used by the Soldier Accomplishments widget */
   supportFormEntries?: SupportFormEntry[];
+  /** The original uploaded support form can be reviewed alongside AI suggestions. */
+  uploadedSupportFormFileType?: string;
 }
 
 export function SectionEditor({
@@ -55,7 +58,10 @@ export function SectionEditor({
   ratingStyle = "four-level",
   soldierInfo,
   supportFormEntries = [],
+  uploadedSupportFormFileType,
 }: SectionEditorProps) {
+  const contentLabel = soldierInfo?.formType.startsWith("OER") ? "comment" : "bullet";
+  const contentLabelPlural = contentLabel === "comment" ? "Comments" : "Bullets";
   const [ratingBinary, setRatingBinary] = useState<RatingBinary | null>(
     section.ratingBinary,
   );
@@ -82,9 +88,14 @@ export function SectionEditor({
   const [scratchMode, setScratchMode] = useState(false);
   const [scratchText, setScratchText] = useState("");
   const [generatingScratch, setGeneratingScratch] = useState(false);
+  const [scratchError, setScratchError] = useState<string | null>(null);
   const [localSuggestions, setLocalSuggestions] = useState<AIBulletSuggestion[]>(
     aiBulletSuggestions,
   );
+
+  useEffect(() => {
+    setLocalSuggestions(aiBulletSuggestions);
+  }, [aiBulletSuggestions]);
 
   const isPartIVSection = PART_IV_SECTIONS.includes(section.section as SectionKey);
   const canAddBullet = finalBullets.length < 5;
@@ -186,17 +197,13 @@ export function SectionEditor({
   async function handleGenerateScratch() {
     if (!scratchText.trim()) return;
     setGeneratingScratch(true);
+    setScratchError(null);
     try {
-      const info = soldierInfo ?? { rank: "SGT", mos: "11B", dutyTitle: "Soldier", formType: "NCOER_9_1" };
       const result = await api.post<{ suggestions: AIBulletSuggestion[] }>(
         `/support-form-uploads/${evalId}/generate-scratch`,
         {
           sectionKey: section.section,
           raterDescription: scratchText,
-          soldierRank: info.rank,
-          soldierMos: info.mos,
-          dutyTitle: info.dutyTitle,
-          formType: info.formType,
         },
       );
       const merged = [...localSuggestions, ...(result.suggestions ?? [])];
@@ -205,8 +212,8 @@ export function SectionEditor({
       setScratchMode(false);
       setScratchText("");
       setAiPanelOpen(true);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setScratchError("AI generation failed. Check the backend connection and try again.");
     } finally {
       setGeneratingScratch(false);
     }
@@ -242,7 +249,7 @@ export function SectionEditor({
 
       {/* AI Panel Toggle */}
       {isPartIVSection && (
-        <div className="flex items-center justify-between rounded border border-border bg-muted/30 px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-border bg-muted/30 px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">AI Suggestions</span>
             {sectionSuggestions.length > 0 && (
@@ -260,18 +267,21 @@ export function SectionEditor({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setAiPanelOpen((o) => !o)}
-            className={cn(
-              "rounded px-2.5 py-1 text-xs font-medium transition-colors",
-              aiPanelOpen
-                ? "bg-[#1A3010] text-white"
-                : "border border-border bg-background text-foreground hover:bg-muted",
-            )}
-          >
-            {aiPanelOpen ? "Hide AI" : "Show AI"}
-          </button>
+          <div className="flex items-center gap-2">
+            {uploadedSupportFormFileType && <UploadedSupportFormViewer evalId={evalId} fileType={uploadedSupportFormFileType} />}
+            <button
+              type="button"
+              onClick={() => setAiPanelOpen((o) => !o)}
+              className={cn(
+                "rounded px-2.5 py-1 text-xs font-medium transition-colors",
+                aiPanelOpen
+                  ? "bg-[#1A3010] text-white"
+                  : "border border-border bg-background text-foreground hover:bg-muted",
+              )}
+            >
+              {aiPanelOpen ? "Hide AI" : "Show AI"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -281,12 +291,12 @@ export function SectionEditor({
         <div className="space-y-4">
           <div>
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Performance Bullets ({finalBullets.length}/5)
+              Performance {contentLabelPlural} ({finalBullets.length}/5)
             </h3>
 
             {finalBullets.length === 0 && (
               <p className="rounded border border-dashed border-border p-3 text-sm text-muted-foreground">
-                No bullets yet. Accept AI suggestions or add manually below.
+                No {contentLabel === "comment" ? "comments" : "bullets"} yet. Accept AI suggestions or add one manually below.
               </p>
             )}
 
@@ -315,11 +325,13 @@ export function SectionEditor({
           {canAddBullet && editingIndex === null && (
             <div>
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Add Bullet Manually
+                Add {contentLabel === "comment" ? "Comment" : "Bullet"} Manually
               </h3>
               <BulletEditor onSave={(t) => handleAddBullet(t, "HUMAN")} />
               <p className="mt-1 text-xs text-muted-foreground">
-                Army format: begin with action verb, focus on impact, ≤{BULLET_MAX_CHARS} chars.
+                {contentLabel === "comment"
+                  ? `Keep the narrative factual, concise, and within ${BULLET_MAX_CHARS} characters.`
+                  : `Army format: begin with action verb, focus on impact, ≤${BULLET_MAX_CHARS} chars.`}
               </p>
             </div>
           )}
@@ -329,13 +341,14 @@ export function SectionEditor({
         {aiPanelOpen && isPartIVSection && (
           <div className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              AI Bullet Suggestions
+              AI Performance Suggestions
             </h3>
 
             <AIBulletPanel
               evalId={evalId}
               sectionKey={section.section as SectionKey}
               suggestions={localSuggestions}
+              contentLabel={contentLabel}
               onSectionUpdated={handleSectionUpdatedFromServer}
               onSuggestionsChange={handleSuggestionsChange}
             />
@@ -398,9 +411,10 @@ export function SectionEditor({
                     {generatingScratch && (
                       <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
                     )}
-                    Generate Bullets
+                    Generate {contentLabel === "comment" ? "Comments" : "Bullets"}
                   </button>
                 </div>
+                {scratchError && <p className="text-xs text-red-700">{scratchError}</p>}
               </div>
             )}
 

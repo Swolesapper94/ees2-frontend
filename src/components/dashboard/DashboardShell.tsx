@@ -6,7 +6,8 @@ import { DashboardGreeting } from "@/components/dashboard/DashboardGreeting";
 import { MyRatingTrendPanel } from "@/components/dashboard/MyRatingTrendPanel";
 import type { SoldierCardData } from "@/components/dashboard/SoldierCard";
 import type { EvalFormType } from "@/types/evaluation";
-import { DelegatedAccessSection } from "@/components/delegates/DelegatedAccessSection";
+import { PeopleHelpingMeSummary } from "@/components/access-assistance/PeopleHelpingMeSummary";
+import { PeopleIAssistSummary } from "@/components/access-assistance/PeopleIAssistSummary";
 import { DashboardAnalyticsHeader } from "@/components/dashboard/DashboardAnalyticsHeader";
 
 // ── Types matching the /api/dashboard response shape ─────────────
@@ -62,7 +63,7 @@ export interface DashboardShellProps {
  * Top-level dashboard layout.
  * Zone A (My Evaluation) is always visible.
  * Zone B (My Soldiers) only renders when soldierChains.length > 0.
- * Zone C (Delegated Access) only renders when delegate records exist.
+ * Assistance assignments remain separate from direct rating-chain dashboard data.
  */
 export function DashboardShell({ myChain, soldierChains, userRoles, myUser, dashboardRecap }: DashboardShellProps) {
   return (
@@ -110,8 +111,8 @@ export function DashboardShell({ myChain, soldierChains, userRoles, myUser, dash
       {/* Zone B — My Soldiers (only when present) */}
       <SoldierGrid soldierChains={soldierChains} />
 
-      {/* Zone C — Delegated Access (rendered by component only when records exist) */}
-      <DelegatedAccessSection />
+      <PeopleHelpingMeSummary />
+      <PeopleIAssistSummary />
     </div>
   );
 }

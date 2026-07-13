@@ -56,7 +56,7 @@ const ROLE_LABELS: Record<SignRole, string> = {
   SOLDIER: "Rated Soldier",
 };
 
-const ROLE_ORDER: SignRole[] = ["RATER", "SENIOR_RATER", "REVIEWER", "SOLDIER"];
+const ROLE_ORDER: SignRole[] = ["RATER", "SENIOR_RATER", "SOLDIER", "REVIEWER"];
 
 const PART_IV_ORDER = [
   "CHARACTER",

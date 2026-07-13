@@ -171,6 +171,11 @@ export interface SupportFormEntry {
   counseledDate: string | null;
   usedInEvalId: string | null;
   confirmationStatus: EntryConfirmationStatus;
+  createdByUserId?: string | null;
+  onBehalfOfUserId?: string | null;
+  delegationGrantId?: string | null;
+  createdByUser?: { firstName: string; lastName: string; rank: string } | null;
+  assistedUser?: { firstName: string; lastName: string; rank: string } | null;
   confirmedById: string | null;
   confirmedAt: string | null;
   clarificationNote: string | null;
@@ -182,6 +187,7 @@ export interface SupportFormEntry {
 export interface SupportForm {
   id: string;
   soldierId: string;
+  status?: "DRAFT" | "INITIAL_COUNSELING_COMPLETE" | "ACTIVE" | "FINALIZED" | "CONSUMED" | "ARCHIVED" | "QUARANTINED";
   ratingChainId: string | null;
   evalCategory: "NCOER" | "OER" | null;
   ratingPeriodStart: string;

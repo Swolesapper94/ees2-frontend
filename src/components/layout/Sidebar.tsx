@@ -8,6 +8,7 @@ import {
   Users,
   ClipboardList,
   FileText,
+  HandHelping,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -17,6 +18,8 @@ interface SidebarProps {
   hasSoldiers?: boolean;
   /** Show "Commander's Access" section — only for COMMANDER role. Defaults false. */
   isCommander?: boolean;
+  /** Identity and Access Administration is limited to application administrators. */
+  canViewAdmin?: boolean;
 }
 
 function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
@@ -44,7 +47,7 @@ function Divider() {
   return <div className="my-1 mx-2 border-t border-white/10" />;
 }
 
-export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProps) {
+export function Sidebar({ hasSoldiers = true, isCommander = false, canViewAdmin = false }: SidebarProps) {
   return (
     <aside className="flex w-60 flex-col bg-sidebar text-sidebar-text">
       <div className="px-5 py-4 text-lg font-bold tracking-tight">EES 2.0</div>
@@ -55,6 +58,7 @@ export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProp
           <NavItem href="/my-soldiers" label="My Soldiers" icon={Users} />
         )}
         <NavItem href="/support-form" label="Support Form" icon={ClipboardList} />
+        <NavItem href="/access-assistance" label="Access and Assistance" icon={HandHelping} />
 
         <Divider />
 
@@ -69,7 +73,7 @@ export function Sidebar({ hasSoldiers = true, isCommander = false }: SidebarProp
         )}
 
         <NavItem href="/all-evaluations" label="All Evaluations" icon={FileText} />
-        <NavItem href="/admin/users" label="Admin" icon={Settings} />
+        {canViewAdmin && <NavItem href="/admin/identity-access" label="Identity and Access" icon={Settings} />}
       </nav>
     </aside>
   );

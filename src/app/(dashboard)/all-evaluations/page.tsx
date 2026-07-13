@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useApiGet } from "@/lib/api/hooks";
+import { ApiError, api } from "@/lib/api/client";
 import type { Evaluation, EvalStatus } from "@/types/evaluation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RankInsignia } from "@/components/ui/RankInsignia";
@@ -44,9 +45,12 @@ interface EvalWithChain extends Evaluation {
 const ALL_STATUSES = Object.keys(STATUS_LABELS) as EvalStatus[];
 
 export default function AllEvaluationsPage() {
-  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations");
+  const { data: evals = [], error, isLoading, mutate } = useApiGet<EvalWithChain[]>("/evaluations");
   const [filterStatus, setFilterStatus] = useState<EvalStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
+  const [evaluationToDelete, setEvaluationToDelete] = useState<EvalWithChain | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const filtered = evals.filter((e) => {
     if (filterStatus !== "ALL" && e.status !== filterStatus) return false;
@@ -59,6 +63,26 @@ export default function AllEvaluationsPage() {
     }
     return true;
   });
+
+  async function handleDelete() {
+    if (!evaluationToDelete) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.delete(`/evaluations/${evaluationToDelete.id}`);
+      await mutate(evals.filter((evaluation) => evaluation.id !== evaluationToDelete.id), false);
+      setEvaluationToDelete(null);
+    } catch (requestError) {
+      const message = requestError instanceof ApiError &&
+        typeof requestError.details === "object" && requestError.details !== null &&
+        "error" in requestError.details && typeof requestError.details.error === "string"
+        ? requestError.details.error
+        : "Unable to delete this evaluation.";
+      setDeleteError(message);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div className="p-6">
@@ -84,6 +108,7 @@ export default function AllEvaluationsPage() {
           className="rounded-sm border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
         />
         <select
+          aria-label="Filter evaluations by status"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as EvalStatus | "ALL")}
           className="rounded-sm border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-ring"
@@ -143,12 +168,13 @@ export default function AllEvaluationsPage() {
             const raterName = rater
               ? `${rankAbbr(rater.rank)} ${rater.lastName}`
               : "—";
+            const deletable = e.status === "DRAFT" || e.status === "RATER_IN_PROGRESS";
             return (
-              <Link
+              <div
                 key={e.id}
-                href={`/evaluations/${e.id}/admin`}
-                className="flex items-center justify-between rounded-sm border border-border bg-card p-4 hover:bg-accent transition-colors"
+                className="flex items-center justify-between gap-4 rounded-sm border border-border bg-card p-4 transition-colors hover:bg-accent"
               >
+                <Link href={`/evaluations/${e.id}/admin`} className="min-w-0 flex flex-1 items-center gap-3">
                 <div className="flex items-center gap-3">
                   {soldier && <RankInsignia rank={soldier.rank} size="md" />}
                   <div>
@@ -164,14 +190,69 @@ export default function AllEvaluationsPage() {
                     </p>
                   </div>
                 </div>
+                </Link>
+                <div className="flex shrink-0 items-center gap-3">
                 <span
                   className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}
                 >
                   {STATUS_LABELS[e.status]}
                 </span>
-              </Link>
+                  {deletable && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeleteError(null);
+                        setEvaluationToDelete(e);
+                      }}
+                      className="rounded-sm border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 hover:bg-red-100"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
             );
           })}
+        </div>
+      )}
+
+      {evaluationToDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-evaluation-title"
+        >
+          <div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg">
+            <h2 id="delete-evaluation-title" className="text-lg font-semibold">Delete this draft evaluation?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {evaluationToDelete.ratingChain?.ratedSoldier
+                ? `${rankAbbr(evaluationToDelete.ratingChain.ratedSoldier.rank)} ${evaluationToDelete.ratingChain.ratedSoldier.lastName}'s ${evaluationToDelete.formType.replace(/_/g, "-")} will be removed.`
+                : "This evaluation will be removed."}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              The evaluation, AI suggestions/uploads, milestones, and comments will be deleted. Its consumed support form will be restored for a new attempt.
+            </p>
+            {deleteError && <p className="mt-3 text-sm text-red-700">{deleteError}</p>}
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setEvaluationToDelete(null)}
+                disabled={deleting}
+                className="rounded-sm border border-input px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-sm bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete Draft"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

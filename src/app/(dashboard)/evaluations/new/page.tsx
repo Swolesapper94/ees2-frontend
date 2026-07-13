@@ -18,7 +18,9 @@ interface RatingChain {
   };
   rater: { firstName: string; lastName: string; rank: string };
   seniorRater: { firstName: string; lastName: string; rank: string };
-  periodStart?: string;
+  ratingSchemeAssignmentId: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
 }
 
 type Mode = "choose" | "soldier" | "rater";
@@ -35,7 +37,7 @@ export default function NewEvaluationPage() {
 
   useEffect(() => {
     api
-      .get<RatingChain[]>("/rating-chains")
+      .get<RatingChain[]>("/rating-chains?purpose=evaluation-creation&role=soldier")
       .then(setChains)
       .catch(() => {})
       .finally(() => setChainsLoading(false));
@@ -93,7 +95,7 @@ function NewEvaluationPageContent({
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight">Initiate My Evaluation</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            You&apos;ll confirm your rating period and optionally upload your support form.
+            Confirm your rating period after your finalized support form is ready.
             Your rater will be notified to begin Part IV.
           </p>
         </div>
@@ -132,8 +134,8 @@ function NewEvaluationPageContent({
           <div className="mb-2 text-2xl">🪖</div>
           <h3 className="font-semibold text-sm">I&apos;m the Rated Soldier</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Initiate your own evaluation, confirm your rating period, and optionally
-            upload your support form. Your rater will be notified.
+            Initiate your own evaluation after your finalized support form is ready.
+            Your rater will be notified.
           </p>
           <p className="mt-2 text-xs font-medium text-[#1A3010]">
             Soldier-Initiated (AR 623-3 §3-12) →

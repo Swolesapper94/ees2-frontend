@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { api } from "@/lib/api/client";
+import { useParams, useRouter } from "next/navigation";
+import { ApiError, api } from "@/lib/api/client";
 import { ConsistencyCheckModal } from "@/components/evaluation/ConsistencyCheckModal";
 import type { ConsistencyFlag, EvalSection, EvalStatus } from "@/types/evaluation";
 import { SECTION_LABELS, RATING_BINARY_LABELS, RATING_FOUR_LEVEL_LABELS } from "@/lib/utils/form-constants";
@@ -37,6 +37,7 @@ interface EvalDetail {
 export default function ReviewPage() {
   const params = useParams();
   const id = params.id as string;
+  const router = useRouter();
 
   const [evalData, setEvalData] = useState<EvalDetail | null>(null);
   const [flags, setFlags] = useState<ConsistencyFlag[]>([]);
@@ -44,6 +45,9 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -77,6 +81,23 @@ export default function ReviewPage() {
         setPdfUrl(objUrl);
         window.open(objUrl, "_blank");
       });
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.delete(`/evaluations/${id}`);
+      router.replace("/evaluations");
+    } catch (error) {
+      const message = error instanceof ApiError &&
+        typeof error.details === "object" && error.details !== null &&
+        "error" in error.details && typeof error.details.error === "string"
+        ? error.details.error
+        : "Unable to delete this evaluation.";
+      setDeleteError(message);
+      setDeleting(false);
+    }
   }
 
   if (loading) return (
@@ -189,7 +210,51 @@ export default function ReviewPage() {
         >
           Proceed to Sign →
         </Link>
+        {["DRAFT", "RATER_IN_PROGRESS"].includes(evalData.status) && (
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="rounded-sm border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-100"
+          >
+            Delete Draft
+          </button>
+        )}
       </div>
+
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-evaluation-title"
+        >
+          <div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg">
+            <h2 id="delete-evaluation-title" className="text-lg font-semibold">Delete this draft evaluation?</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              This permanently removes the evaluation, sections, AI suggestions, uploads, milestones, and comments. Its consumed support form will be restored for a new attempt.
+            </p>
+            {deleteError && <p className="mt-3 text-sm text-red-700">{deleteError}</p>}
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="rounded-sm border border-input px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-sm bg-red-700 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {deleting ? "Deleting…" : "Delete Draft"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pdfUrl && (
         <p className="mt-3 text-sm text-green-600">

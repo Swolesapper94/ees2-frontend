@@ -20,30 +20,24 @@ export default function DashboardLayout({
 }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("[DashboardLayout] Effect running...");
     api
       .get<User>("/users/me")
       .then((userData) => {
-        console.log("[DashboardLayout] User fetched successfully:", userData?.email, "Roles:", userData?.roles);
         setUser(userData);
       })
-      .catch((err) => {
-        console.error("[DashboardLayout] Failed to fetch user:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch user");
+      .catch(() => {
         setUser(null);
       })
       .finally(() => {
-        console.log("[DashboardLayout] Setting loading to false");
         setLoading(false);
       });
   }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      <Sidebar canViewAdmin={Boolean(user?.roles.includes("ADMIN"))} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <TopNav />
         <main className="flex-1 overflow-y-auto">{children}</main>

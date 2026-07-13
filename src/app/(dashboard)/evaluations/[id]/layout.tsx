@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { SoldierHeader } from "@/components/layout/SoldierHeader";
 import { SectionNav } from "@/components/evaluation/SectionNav";
 import { api } from "@/lib/api/client";
@@ -22,11 +22,13 @@ interface EvalMeta {
 export default function EvaluationLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const id = params.id as string;
   const [meta, setMeta] = useState<EvalMeta | null>(null);
 
   // Sign page manages its own full-height layout — no padding wrapper
   const isSignPage = pathname?.endsWith("/sign");
+  const assisting = searchParams.get("assisting");
 
   useEffect(() => {
     if (id) api.get<EvalMeta>(`/evaluations/${id}`).then(setMeta).catch(() => null);
@@ -54,6 +56,7 @@ export default function EvaluationLayout({ children }: { children: React.ReactNo
           rater={rater ? `${rater.rank} ${rater.lastName}` : ""}
           seniorRater={sr ? `${sr.rank} ${sr.lastName}` : ""}
         />
+        {assisting && <div className="mx-6 mt-4 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">You are viewing permitted evaluation details while assisting this rating workflow. Your access is read-only unless an explicit capability grants a separate administrative action. You cannot make ratings, edit narratives, acknowledge, sign, submit, or change the rating chain.</div>}
         <div className={isSignPage ? "flex-1 overflow-hidden" : "flex-1 overflow-y-auto p-6"}>{children}</div>
       </div>
     </div>

@@ -7,8 +7,6 @@ interface LifetimeStatsProps {
   onTime: number;
   onTimePct: number;
   misfireCount: number;
-  activeGrade: string;
-  onAskAboutProfile: (grade: string) => void;
 }
 
 const SEQ_TOOLTIP =
@@ -23,11 +21,7 @@ export function LifetimeStats({
   onTime,
   onTimePct,
   misfireCount,
-  activeGrade,
-  onAskAboutProfile,
 }: LifetimeStatsProps) {
-  const displayGrade = activeGrade === "FIRST_SERGEANT" ? "1SG" : activeGrade;
-
   const tiles = [
     { label: "Total rendered", value: totalRendered.toString() },
     { label: "Submitted on time", value: `${onTime}/${totalRendered}` },
@@ -62,15 +56,6 @@ export function LifetimeStats({
         NCOERs must be submitted to HRC in the order they were rendered. Improperly sequenced evals
         are not eligible for appeal. Verify submission order before routing.
       </div>
-
-      {/* AI action link */}
-      <button
-        type="button"
-        onClick={() => onAskAboutProfile(activeGrade)}
-        className="text-xs text-blue-600 hover:text-blue-800 hover:underline text-left"
-      >
-        💬 Ask about managing my {displayGrade} profile ↗
-      </button>
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 import { SupportChatModal } from "@/components/support/SupportChatModal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { api } from "@/lib/api/client";
+import { NOTIFICATIONS_REFRESH_EVENT } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils/cn";
 
 interface DevAuthUser {
@@ -82,9 +83,7 @@ export function ProfileMenu() {
     setSeedingNotifications(true);
     try {
       await api.get("/dev/seed-notifications");
-      // Trigger a re-fetch of notifications by refreshing the page
-      // (In production, we'd emit an event to refresh NotificationBell hook)
-      window.location.reload();
+      window.dispatchEvent(new Event(NOTIFICATIONS_REFRESH_EVENT));
     } catch {
       alert("Failed to seed notifications");
     } finally {

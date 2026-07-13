@@ -87,7 +87,7 @@ export function DueWindowsPanel() {
       ) : isEmpty ? (
         <div className="flex flex-col items-center justify-center h-24 gap-2 text-slate-400">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 21h18M3 7v8a2 2 0 002 2h14a2 2 0 002-2V7M3 7l9-4 9 4"/></svg>
-          <p className="text-xs">No soldiers in your rating chains yet.</p>
+          <p className="text-xs">No evaluations in your assigned rating chains are due in the next 90 days.</p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

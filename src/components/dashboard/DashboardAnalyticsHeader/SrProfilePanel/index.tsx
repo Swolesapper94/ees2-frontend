@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { api } from "@/lib/api/client";
 import { MetricTooltip } from "../shared/MetricTooltip";
 import { RankTabs } from "./RankTabs";
@@ -42,7 +41,6 @@ export function SrProfilePanel() {
   const [data, setData] = useState<SrProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeGrade, setActiveGrade] = useState<string>("");
-  const router = useRouter();
 
   useEffect(() => {
     api.get<SrProfileData>("/dashboard/sr-profile")
@@ -56,16 +54,6 @@ export function SrProfilePanel() {
 
   const activeData = data?.grades.find((g) => g.grade === activeGrade);
   const isEmpty = !loading && data && data.grades.length === 0;
-
-  function handleAskAboutProfile(grade: string) {
-    const displayGrade = grade === "FIRST_SERGEANT" ? "1SG" : grade;
-    // Navigate to AI page with a pre-filled prompt
-    router.push(
-      `/dashboard?aiPrompt=${encodeURIComponent(
-        `Walk me through my SR profile for ${displayGrade} and how to avoid a misfire on the next eval`,
-      )}`,
-    );
-  }
 
   return (
     <div className="bg-slate-50 rounded-lg p-4 border-2 border-blue-300">
@@ -139,8 +127,6 @@ export function SrProfilePanel() {
                 onTime={data.onTime}
                 onTimePct={data.onTimePct}
                 misfireCount={data.misfireCount}
-                activeGrade={activeGrade}
-                onAskAboutProfile={handleAskAboutProfile}
               />
             </div>
           </div>

@@ -24,7 +24,9 @@ interface RatingChain {
   };
   rater: { firstName: string; lastName: string; rank: string };
   seniorRater: { firstName: string; lastName: string; rank: string };
-  periodStart?: string;
+  ratingSchemeAssignmentId: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
 }
 
 function rankToFormType(rank: string): EvalFormType {
@@ -98,6 +100,7 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
       // Create the evaluation
       const created = await api.post<{ id: string }>("/evaluations", {
         ratingChainId: chainId,
+        ratingSchemeAssignmentId: selectedChain?.ratingSchemeAssignmentId,
         formType,
         periodStart,
         periodEnd,
@@ -171,14 +174,14 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
           <div>
             <label className="mb-1 block text-sm font-medium">Soldier</label>
             <select
+              aria-label="Rated Soldier"
               value={chainId}
               onChange={(e) => setChainId(e.target.value)}
               className="w-full rounded border border-input bg-background p-2 text-sm"
             >
               {chains.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.ratedSoldier.rank} {c.ratedSoldier.lastName},{" "}
-                  {c.ratedSoldier.firstName}
+                  {c.ratedSoldier.rank} {c.ratedSoldier.lastName}, {c.ratedSoldier.firstName} - {c.rater.rank} {c.rater.lastName}, Rater
                 </option>
               ))}
             </select>
@@ -188,6 +191,8 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
             <div className="rounded border border-border bg-muted/30 p-3 text-sm space-y-0.5">
               <p><span className="font-medium">Rank:</span> {soldier.rank}</p>
               <p><span className="font-medium">MOS:</span> {soldier.mos}</p>
+              <p><span className="font-medium">Rater:</span> {selectedChain?.rater.rank} {selectedChain?.rater.lastName}</p>
+              <p><span className="font-medium">Senior Rater:</span> {selectedChain?.seniorRater.rank} {selectedChain?.seniorRater.lastName}</p>
               <p><span className="font-medium">Form type:</span> {FORM_TYPE_LABELS[formType] ?? formType}</p>
               <p className="text-xs text-muted-foreground mt-1">Form type auto-determined by rank (AR 623-3)</p>
             </div>
@@ -197,6 +202,7 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
             <div>
               <label className="mb-1 block text-sm font-medium">Period Start (FROM)</label>
               <input
+                aria-label="Rating period start"
                 type="date"
                 required
                 value={periodStart}
@@ -207,6 +213,7 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
             <div>
               <label className="mb-1 block text-sm font-medium">Period End (THRU)</label>
               <input
+                aria-label="Rating period end"
                 type="date"
                 required
                 value={periodEnd}
@@ -220,6 +227,7 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
           <div>
             <label className="mb-1 block text-sm font-medium">Reason for Submission</label>
             <select
+              aria-label="Reason for submission"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               className="w-full rounded border border-input bg-background p-2 text-sm"
@@ -243,9 +251,8 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
           <div>
             <h3 className="font-medium text-sm mb-1">Upload Your Support Form</h3>
             <p className="text-xs text-muted-foreground mb-3">
-              Upload your DA 2166-9-1A support form to help your rater write your evaluation.
-              AI will extract your accomplishments and generate bullet suggestions — your rater
-              reviews and approves everything.
+              A finalized support form must already exist for this rating assignment. This optional
+              document upload is additional evidence only; it cannot satisfy the evaluation-creation gate.
             </p>
 
             {/* Drop zone */}
@@ -257,6 +264,7 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
                 onDrop={handleFileDrop}
               >
                 <input
+                  aria-label="Upload supplemental support-form document"
                   ref={fileRef}
                   type="file"
                   accept=".pdf,image/jpeg,image/png,image/webp"
@@ -301,8 +309,8 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
                     className="mt-0.5"
                   />
                   <span className="text-xs text-muted-foreground">
-                    Skip for now — I&apos;ll upload later, or my rater will write without it.
-                    You can upload from your Dashboard any time while the eval is in progress.
+                    Skip this optional document upload. Your existing finalized support form remains
+                    required before the evaluation can be created.
                   </span>
                 </label>
               </div>
@@ -342,14 +350,14 @@ export function SoldierInitWizard({ chains, myChainId, onCancel }: SoldierInitWi
             <div className="flex justify-between">
               <span className="text-muted-foreground">Support Form</span>
               <span className={supportFile ? "text-green-700 font-medium" : "text-muted-foreground"}>
-                {supportFile ? `✓ ${supportFile.name}` : skipped ? "Skipping" : "Not uploaded"}
+                {supportFile ? `✓ ${supportFile.name}` : skipped ? "No additional document" : "No additional document"}
               </span>
             </div>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Submitting will create the evaluation record and notify your rater.
-            {supportFile && " Your support form will be processed automatically."}
+            Submitting will verify the finalized support form, create the evaluation record, and notify your rater.
+            {supportFile && " Your additional document will be processed after creation."}
           </p>
 
           {error && (

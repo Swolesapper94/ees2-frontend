@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api/client";
 
+export const NOTIFICATIONS_REFRESH_EVENT = "ees2:notifications-refresh";
+
 export type NotificationCategory =
   | "EVAL_LIFECYCLE"
   | "MILESTONE"
@@ -47,7 +49,12 @@ export function useNotifications() {
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30_000);
-    return () => clearInterval(interval);
+    const handleRefresh = () => { void fetchNotifications(); };
+    window.addEventListener(NOTIFICATIONS_REFRESH_EVENT, handleRefresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(NOTIFICATIONS_REFRESH_EVENT, handleRefresh);
+    };
   }, [fetchNotifications]);
 
   const dismiss = useCallback(async (id: string) => {

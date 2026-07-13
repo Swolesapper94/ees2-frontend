@@ -15,6 +15,7 @@ interface AIBulletPanelProps {
   evalId: string;
   sectionKey: SectionKey;
   suggestions: AIBulletSuggestion[];
+  contentLabel?: "bullet" | "comment";
   /**
    * Called after a suggestion is accepted/edited with the server's
    * authoritative updated section (finalBullets/bulletSources/
@@ -44,6 +45,7 @@ export function AIBulletPanel({
   evalId,
   sectionKey,
   suggestions,
+  contentLabel = "bullet",
   onSectionUpdated,
   onSuggestionsChange,
 }: AIBulletPanelProps) {
@@ -99,7 +101,7 @@ export function AIBulletPanel({
       <div className="rounded border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
         No AI suggestions yet.
         <br />
-        Upload a support form or use "Generate from scratch" below.
+        Upload a support form or generate a {contentLabel} from scratch below.
       </div>
     );
   }
@@ -144,7 +146,7 @@ export function AIBulletPanel({
               )}
             </div>
 
-            {/* Bullet text or inline editor */}
+            {/* Suggestion text or inline editor */}
             {isEditing ? (
               <div className="space-y-2">
                 <textarea
@@ -153,8 +155,8 @@ export function AIBulletPanel({
                   maxLength={300}
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  placeholder="Edit bullet text"
-                  aria-label="Edit bullet text"
+                  placeholder={`Edit ${contentLabel} text`}
+                  aria-label={`Edit ${contentLabel} text`}
                   autoFocus
                 />
                 <div className="flex items-center justify-between">
@@ -182,6 +184,13 @@ export function AIBulletPanel({
               </div>
             ) : (
               <p className="text-foreground leading-snug">{s.editedText ?? s.text}</p>
+            )}
+
+            {!isEditing && s.sourceSnapshot?.[0]?.rawText && (
+              <details className="mt-2 text-[11px] text-muted-foreground">
+                <summary className="cursor-pointer select-none hover:text-foreground">View source fact</summary>
+                <p className="mt-1 border-l-2 border-muted-foreground/30 pl-2 leading-snug">{s.sourceSnapshot[0].rawText}</p>
+              </details>
             )}
 
             {/* Unsupported-fact warnings — advisory only, visible before

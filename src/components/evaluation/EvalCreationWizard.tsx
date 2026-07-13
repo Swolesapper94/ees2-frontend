@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api/client";
+import { ApiError, api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { resolveFormType } from "@/lib/utils/army-ranks";
 
@@ -28,10 +28,15 @@ interface RatingChain {
   };
   rater: { firstName: string; lastName: string; rank: string };
   seniorRater: { firstName: string; lastName: string; rank: string };
+  ratingSchemeAssignmentId: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
 }
 
 interface SupportForm {
   id: string;
+  isActive: boolean;
+  status?: string;
   _count?: { entries: number };
   dutyTitle?: string;
 }
@@ -72,7 +77,7 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
   // Load rating chains
   useEffect(() => {
     api
-      .get<RatingChain[]>("/rating-chains")
+      .get<RatingChain[]>("/rating-chains?purpose=evaluation-creation&role=rater")
       .then(setChains)
       .catch(() => setError("Could not load rating chains"))
       .finally(() => setLoading(false));
@@ -90,8 +95,8 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
   useEffect(() => {
     if (!state.chain) return;
     api
-      .get<{ forms: SupportForm[] }>(`/support-forms?soldierId=${state.chain.ratedSoldier.id}`)
-      .then((res) => setSupportForm(res.forms?.[0] ?? null))
+      .get<SupportForm[]>(`/support-forms?soldierId=${state.chain.ratedSoldier.id}`)
+      .then((forms) => setSupportForm(forms.find((form) => form.isActive && form.status !== "CONSUMED") ?? null))
       .catch(() => setSupportForm(null));
   }, [state.chain]);
 
@@ -114,6 +119,7 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
 
       const created = await api.post<{ id: string }>("/evaluations", {
         ratingChainId: state.ratingChainId,
+        ratingSchemeAssignmentId: state.chain.ratingSchemeAssignmentId,
         formType: formInfo?.formType ?? "NCOER_9_1",
         periodStart,
         periodEnd,
@@ -123,8 +129,15 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
       });
 
       router.push(`/evaluations/${created.id}/admin`);
-    } catch {
-      setError("Failed to create evaluation. Please try again.");
+    } catch (error) {
+      const serverMessage = error instanceof ApiError &&
+        typeof error.details === "object" &&
+        error.details !== null &&
+        "error" in error.details &&
+        typeof error.details.error === "string"
+        ? error.details.error
+        : null;
+      setError(serverMessage ?? "Failed to create evaluation. Please try again.");
       setSubmitting(false);
     }
   }
@@ -189,8 +202,9 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
                     {c.ratedSoldier.rank} {c.ratedSoldier.lastName}, {c.ratedSoldier.firstName}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {c.ratedSoldier.mos} · {c.ratedSoldier.dutyTitle ?? "—"}
+                    {c.ratedSoldier.mos} · Rater: {c.rater.rank} {c.rater.lastName} · SR: {c.seniorRater.rank} {c.seniorRater.lastName}
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">Effective from {new Date(c.effectiveFrom).toLocaleDateString()}</p>
                 </button>
               ))}
               {chains.length === 0 && (
@@ -301,11 +315,11 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
         <div>
           <h2 className="text-base font-semibold mb-1">Step 4 — Link Support Form</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            AI assistance works best when support form entries are available.
+            A finalized support form is required before an evaluation can be created. The server validates the form linked to the selected rating assignment.
           </p>
           {supportForm ? (
             <div className="rounded-sm border border-[#4B5320]/30 bg-[#4B5320]/5 p-4 mb-4">
-              <p className="text-sm font-medium text-[#4B5320]">Active support form found</p>
+              <p className="text-sm font-medium text-[#4B5320]">Assignment-linked support form found</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {supportForm._count?.entries ?? 0} entries logged
               </p>
@@ -320,21 +334,13 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
                 >
                   Link this form
                 </button>
-                <button
-                  onClick={() => setState((s) => ({ ...s, supportFormId: undefined }))}
-                  className={`px-3 py-1.5 text-xs rounded-sm border transition-colors ${
-                    !state.supportFormId ? "border-[#1E3A5F] bg-[#1E3A5F] text-white" : "border-border"
-                  }`}
-                >
-                  Start fresh
-                </button>
               </div>
             </div>
           ) : (
             <div className="rounded-sm border border-amber-200 bg-amber-50 p-4 mb-4">
-              <p className="text-sm text-amber-700">No active support form found.</p>
+              <p className="text-sm text-amber-700">No visible active support form found.</p>
               <p className="text-xs text-amber-600 mt-1">
-                AI assistance requires support form entries. You can add entries after starting.
+                Evaluation creation will be rejected until the selected assignment has a finalized, hard-complete support form.
               </p>
             </div>
           )}
@@ -371,7 +377,7 @@ export function EvalCreationWizard({ prefillChainId, onCancel }: EvalCreationWiz
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Support Form</span>
-              <span className="font-medium">{state.supportFormId ? "Linked" : "None"}</span>
+              <span className="font-medium">{state.supportFormId ? "Selected" : "Validated by server"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Rater</span>

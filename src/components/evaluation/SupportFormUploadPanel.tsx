@@ -60,6 +60,19 @@ export function SupportFormUploadPanel({
     }
   }
 
+  async function reprocess() {
+    setError(null);
+    setUploading(true);
+    try {
+      await api.post(`/support-form-uploads/${evalId}/reprocess`, {});
+      startPolling();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to reprocess the support form.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   function startPolling() {
     if (pollInterval) return; // already polling
     const interval = setInterval(async () => {
@@ -113,10 +126,10 @@ export function SupportFormUploadPanel({
             <p className="mt-1 text-xs opacity-80">{uploadState.parseError}</p>
           )}
           {isComplete && (
-            <p className="mt-0.5 text-xs opacity-80">
-              {uploadState.bulletSuggestions?.length ?? 0} bullet suggestions generated across{" "}
-              {new Set(uploadState.bulletSuggestions?.map((b) => b.sectionKey)).size} sections.
-            </p>
+            <div className="mt-0.5 flex flex-wrap items-center justify-between gap-2 text-xs opacity-80">
+              <p>{uploadState.bulletSuggestions?.length ?? 0} evidence-grounded suggestions generated across {new Set(uploadState.bulletSuggestions?.map((b) => b.sectionKey)).size} sections.</p>
+              <button type="button" onClick={reprocess} disabled={uploading} className="font-medium text-primary underline disabled:opacity-50">Reprocess support form</button>
+            </div>
           )}
         </div>
       )}
@@ -143,6 +156,7 @@ export function SupportFormUploadPanel({
           <input
             ref={fileRef}
             type="file"
+            aria-label="Upload support form"
             accept=".pdf,image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={(e) => {

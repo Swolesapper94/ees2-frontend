@@ -91,6 +91,13 @@ export const api = {
     return (await res.json()) as T;
   },
 
+  /** Authenticated binary fetch for documents that cannot be opened as a public URL. */
+  blob: async (path: string): Promise<Blob> => {
+    const res = await fetch(`${API_URL}/api${path}`, { headers: await authHeader() });
+    if (!res.ok) throw new ApiError(res.status, `Request failed: ${res.status}`);
+    return res.blob();
+  },
+
   // Returns the absolute URL for binary downloads (PDF).
   pdfUrl: (evaluationId: string) =>
     `${API_URL}/api/pdf/evaluations/${evaluationId}`,

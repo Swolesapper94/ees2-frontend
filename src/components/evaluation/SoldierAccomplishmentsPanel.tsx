@@ -107,10 +107,6 @@ export function SoldierAccomplishmentsPanel({
       }>(`/support-form-uploads/${evalId}/generate-from-entries`, {
         sectionKey,
         entryIds: Array.from(selected),
-        soldierRank: soldierInfo.rank,
-        soldierMos: soldierInfo.mos,
-        dutyTitle: soldierInfo.dutyTitle,
-        formType: soldierInfo.formType,
       });
       onSuggestions(result.suggestions);
       setFlagWarning(result.hasFlaggedArtifacts);
