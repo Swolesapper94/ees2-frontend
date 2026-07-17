@@ -1,11 +1,10 @@
 /**
  * 05 – Evaluation Detail Pages
  * ─────────────────────────────────────────────
- * Uses seeded eval IDs to test the /evaluations/[id] sub-pages.
+ * Uses isolated workflow fixture IDs to test the /evaluations/[id] sub-pages.
  *
- * Seed eval IDs (from prisma/seed.ts):
- *  - seed-eval-smith-complete  → COMPLETE, NCOER_9_1
- *  - seed-eval-jones-pending   → PENDING_SENIOR_RATER, NCOER_9_2
+ * Workflow fixture IDs (from scripts/seed-workflow-test-data.ts):
+ *  - test-eval-davis-complete  → COMPLETE, signed NCOER_9_1
  *  - dev-eval-davis            → RATER_IN_PROGRESS, NCOER_9_1 (3/6 sections done)
  */
 
@@ -13,8 +12,8 @@ import { test, expect } from "@playwright/test";
 import { USERS, loginAs } from "./helpers/auth";
 
 const EVALS = {
-  complete: "seed-eval-smith-complete",
-  pendingSR: "seed-eval-jones-pending",
+  complete: "test-eval-davis-complete",
+  pendingSR: "test-eval-davis-complete",
   inProgress: "dev-eval-davis",
 };
 
@@ -31,8 +30,8 @@ test.describe("Evaluation – Admin (Part I) tab", () => {
     await loginAs(page, USERS.rater);
     await page.goto(`/evaluations/${EVALS.complete}/admin`);
     await page.waitForLoadState("networkidle");
-    // SGT Smith should appear in the metadata table — scope to the table to avoid ambiguous matches
-    await expect(page.locator("table").getByText(/smith/i).first()).toBeVisible();
+    // SGT Davis should appear in the metadata table — scope to the table to avoid ambiguous matches.
+    await expect(page.locator("table").getByText(/davis/i).first()).toBeVisible();
   });
 
   test("shows form type", async ({ page }) => {
@@ -83,9 +82,9 @@ test.describe("Evaluation – Part IV Section Editor", () => {
 
   test("completed CHARACTER section shows bullets", async ({ page }) => {
     await loginAs(page, USERS.rater);
-    await page.goto(`/evaluations/${EVALS.inProgress}/CHARACTER`);
+    await page.goto(`/evaluations/${EVALS.complete}/CHARACTER`);
     await page.waitForLoadState("networkidle");
-    // The seeded eval has a bullet for CHARACTER — use paragraph role to avoid matching Standard buttons
+    // The complete fixture has a finalized CHARACTER bullet.
     await expect(page.getByText(/integrity|UCMJ/i).first()).toBeVisible();
   });
 

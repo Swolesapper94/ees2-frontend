@@ -15,6 +15,7 @@ const STATUS_LABELS: Record<EvalStatus, string> = {
   PENDING_SENIOR_RATER: "Pending Senior Rater",
   PENDING_SOLDIER_ACK: "Pending Soldier Ack",
   PENDING_SUPPLEMENTARY_REVIEW: "Pending Review",
+  PENDING_FINAL_FORM_REVIEW: "Pending Final Form Review",
   COMPLETE: "Complete",
   SUBMITTED: "Submitted",
   ACCEPTED: "Accepted",

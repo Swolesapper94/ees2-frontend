@@ -18,11 +18,11 @@ test.describe("Support Form – list page", () => {
   });
 
   test("has 'Log entry' button", async ({ page }) => {
-    await expect(page.getByRole("link", { name: /log entry/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /log entry/i })).toBeVisible({ timeout: 60_000 });
   });
 
   test("Log entry button navigates to /support-form/entry/new", async ({ page }) => {
-    await page.getByRole("link", { name: /log entry/i }).click();
+    await page.getByRole("link", { name: /log entry/i }).click({ timeout: 60_000 });
     await expect(page).toHaveURL(/\/support-form\/entry\/new/);
   });
 

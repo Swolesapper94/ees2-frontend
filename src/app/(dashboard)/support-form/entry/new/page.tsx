@@ -20,7 +20,6 @@ type Section = (typeof SECTIONS)[number];
 
 const ENTRY_TYPES = [
   { value: "ACCOMPLISHMENT", label: "Accomplishment — something already done" },
-  { value: "OBJECTIVE", label: "Objective — a goal to work toward" },
 ] as const;
 
 const ARTIFACT_TYPES: { value: ArtifactType; label: string }[] = [
@@ -96,12 +95,7 @@ export default function NewEntryPage() {
     })();
   }, []);
 
-  const raterObjectiveOnly = Boolean(form && currentUser && !assisting && currentUser.id !== form.soldierId && !currentUser.roles.includes("ADMIN"));
-  const availableEntryTypes = raterObjectiveOnly ? ENTRY_TYPES.filter((type) => type.value === "OBJECTIVE") : ENTRY_TYPES;
-
-  useEffect(() => {
-    if (raterObjectiveOnly) setEntryType("OBJECTIVE");
-  }, [raterObjectiveOnly]);
+  const availableEntryTypes = ENTRY_TYPES;
 
   function addArtifact() {
     setArtifacts((prev) => [...prev, newDraft()]);
@@ -171,10 +165,9 @@ export default function NewEntryPage() {
   return (
     <div className="p-6 max-w-2xl">
       {assisting && <p className="mb-4 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">You are drafting this entry while assisting the rated Soldier. Your name and grant will remain attached to the draft.</p>}
-      {raterObjectiveOnly && <p className="mb-4 rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">You are adding an objective for the rated Soldier as the assigned rater. Accomplishments and supporting evidence remain the Soldier&apos;s entries.</p>}
       <h1 className="mb-1 text-2xl font-bold tracking-tight">Log Entry</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Record an objective or accomplishment for the rating period.
+        Record a factual accomplishment for the rating period. Goals are managed separately.
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -234,7 +227,7 @@ export default function NewEntryPage() {
         </div>
 
         {/* Artifacts */}
-        {!raterObjectiveOnly && <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Proof (optional)</span>
             <button
@@ -309,7 +302,7 @@ export default function NewEntryPage() {
               )}
             </div>
           ))}
-        </div>}
+        </div>
 
         {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 

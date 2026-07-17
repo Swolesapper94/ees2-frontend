@@ -108,12 +108,18 @@ export default function SupportFormPage() {
       try {
         const me = await api.get<CurrentUser>("/users/me");
         setCurrentUserId(me.id);
-        const [soldierCandidates, raterCandidates] = await Promise.all([
+        const [soldierCandidates, raterCandidates, ownForms] = await Promise.all([
           api.get<AssignmentCandidate[]>("/rating-chains?purpose=evaluation-creation&role=soldier"),
           api.get<AssignmentCandidate[]>("/rating-chains?purpose=evaluation-creation&role=rater"),
+          api.get<SupportForm[]>(`/support-forms?soldierId=${me.id}`),
         ]);
         const assignmentCandidates = [...soldierCandidates, ...raterCandidates].filter((candidate, index, all) => all.findIndex((item) => item.id === candidate.id) === index);
         setCandidates(assignmentCandidates);
+        const ownActiveForm = ownForms.find((item) => item.isActive && item.status !== "CONSUMED") ?? null;
+        if (ownActiveForm) {
+          setForm(ownActiveForm);
+          setEntries(ownActiveForm.entries ?? []);
+        }
         const active = formId
           ? await api.get<SupportForm>(`/support-forms/${formId}`)
           : (() => undefined)();
@@ -122,10 +128,10 @@ export default function SupportFormPage() {
           setEntries(active.entries ?? []);
           return;
         }
-        const optionLists = await Promise.all(assignmentCandidates.map(async (candidate) => ({ assignment: candidate, forms: await api.get<SupportForm[]>(`/support-forms?soldierId=${candidate.ratedSoldier.id}`) })));
+        const optionLists = await Promise.all(assignmentCandidates.map(async (candidate) => ({ assignment: candidate, forms: candidate.ratedSoldier.id === me.id ? ownForms : await api.get<SupportForm[]>(`/support-forms?soldierId=${candidate.ratedSoldier.id}`) })));
         const options = optionLists.flatMap(({ assignment, forms }) => forms.filter((item) => item.isActive && item.status !== "CONSUMED").map((item) => ({ form: item, assignment })));
         setFormOptions(options);
-        const preferred = options.find((option) => option.form.soldierId === me.id) ?? options[0] ?? null;
+        const preferred = options.find((option) => option.form.id === ownActiveForm?.id) ?? options[0] ?? null;
         setForm(preferred?.form ?? null);
         setEntries(preferred?.form.entries ?? []);
       } catch {
@@ -198,6 +204,7 @@ export default function SupportFormPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+        {form && <Button variant="outline" asChild><Link href={`/support-form/goals?formId=${form.id}`}>Goals</Link></Button>}
         {candidates.length > 0 && <Button variant="outline" onClick={() => setShowStartForm(true)}><Plus className="h-4 w-4" />Start form</Button>}
         {form ? (
           <Button asChild>

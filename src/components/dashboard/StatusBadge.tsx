@@ -11,6 +11,7 @@ export type DisplayStatus =
   | "PENDING_SENIOR_RATER"
   | "PENDING_SOLDIER_ACK"
   | "PENDING_SUPPLEMENTARY_REVIEW"
+  | "PENDING_FINAL_FORM_REVIEW"
   | "COMPLETE"
   | "SUBMITTED"
   | "ACCEPTED"
@@ -30,6 +31,7 @@ const CONFIG: Record<DisplayStatus, StatusConfig> = {
   PENDING_SENIOR_RATER:         { icon: "⏳",  label: "Pending Senior Rater", colorClass: "text-status-pending" },
   PENDING_SOLDIER_ACK:          { icon: "✉",   label: "Pending Soldier Ack", colorClass: "text-status-pending" },
   PENDING_SUPPLEMENTARY_REVIEW: { icon: "👁",  label: "Pending Review",      colorClass: "text-status-pending" },
+  PENDING_FINAL_FORM_REVIEW:    { icon: "□",   label: "Final Form Review",   colorClass: "text-status-pending" },
   COMPLETE:                     { icon: "✓",   label: "Complete",           colorClass: "text-status-complete" },
   SUBMITTED:                    { icon: "✓✓",  label: "Submitted",          colorClass: "text-status-submitted" },
   ACCEPTED:                     { icon: "✓✓✓", label: "Accepted",           colorClass: "text-status-accepted" },

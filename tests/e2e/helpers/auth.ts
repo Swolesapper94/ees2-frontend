@@ -38,11 +38,17 @@ export const USERS = {
     label: "CPT Smith — Company Commander",
     token: "Bearer dev:peter.smith@army.mil:testpass",
   },
-  /** Admin / Patricia Brown */
+  /** LTC Reed – the active Battalion Commander and rating-scheme authority. */
+  battalionCommander: {
+    email: "morgan.reed@army.mil",
+    label: "LTC Reed — Battalion Commander",
+    token: "Bearer dev:morgan.reed@army.mil:testpass",
+  },
+  /** CPT Avery Quinn – application administrator */
   admin: {
-    email: "patricia.brown@army.mil",
-    label: "Admin",
-    token: "Bearer dev:patricia.brown@army.mil:testpass",
+    email: "avery.quinn@army.mil",
+    label: "CPT Quinn — Servicing Administrator",
+    token: "Bearer dev:avery.quinn@army.mil:testpass",
   },
 } as const;
 

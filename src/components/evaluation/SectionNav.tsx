@@ -21,6 +21,7 @@ const STEPS: { slug: string; label: string }[] = [
   { slug: "senior-rater", label: "Senior Rater" },
   { slug: "review", label: "Review" },
   { slug: "sign", label: "Sign" },
+  { slug: "final-review", label: "Final Form Review" },
 ];
 
 export function SectionNav({ evalId }: SectionNavProps) {

@@ -7,15 +7,15 @@
 import { test, expect } from "@playwright/test";
 import { USERS, loginAs } from "./helpers/auth";
 
-test.describe("Admin – Users page", () => {
+test.describe("Admin – legacy Users redirect", () => {
   test.beforeEach(async ({ page }) => {
     await loginAs(page, USERS.admin);
     await page.goto("/admin/users");
   });
 
-  test("renders users heading", async ({ page }) => {
+  test("redirects to Identity and Access Administration", async ({ page }) => {
     await page.waitForLoadState("networkidle");
-    await expect(page.getByRole("heading", { name: /users/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/identity-access/);
   });
 
   test("does not throw 500", async ({ page }) => {

@@ -9,6 +9,7 @@ import {
   ClipboardList,
   FileText,
   HandHelping,
+  Network,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -58,6 +59,7 @@ export function Sidebar({ hasSoldiers = true, isCommander = false, canViewAdmin 
           <NavItem href="/my-soldiers" label="My Soldiers" icon={Users} />
         )}
         <NavItem href="/support-form" label="Support Form" icon={ClipboardList} />
+        <NavItem href="/rating-scheme" label="Rating Scheme" icon={Network} />
         <NavItem href="/access-assistance" label="Access and Assistance" icon={HandHelping} />
 
         <Divider />
