@@ -22,6 +22,57 @@ test.describe("Goal tracking privacy and progress", () => {
     await expect(page.getByRole("button", { name: "Manage evidence" }).first()).toBeVisible();
   });
 
+  test("hides rater-only lifecycle controls from the rated Soldier", async ({ page }) => {
+    test.setTimeout(60_000);
+    await loginAs(page, USERS.soldier);
+    await page.goto("/support-form/goals?formId=test-sf-davis-1783951336663");
+
+    await expect(page.getByRole("heading", { name: "Goals and Progress" })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByRole("button", { name: "Record rater assessment" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Record counseling progress" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Review goal" })).toHaveCount(0);
+  });
+
+  test("lets the rated Soldier set category and target date for a draft goal", async ({ page }) => {
+    test.setTimeout(60_000);
+    await loginAs(page, USERS.soldier);
+    await page.goto("/support-form/goals?formId=test-sf-davis-1783951336663");
+
+    await expect(page.getByRole("heading", { name: "Draft a goal" })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByLabel("Category")).toBeVisible();
+    await expect(page.getByLabel("Target date (optional)")).toBeVisible();
+  });
+
+  test("saves edits to the Soldier's draft or revision-requested goal", async ({ page }) => {
+    test.setTimeout(60_000);
+    await loginAs(page, USERS.soldier);
+    const goals = await apiFetch(page, "/support-forms/test-sf-davis-1783951336663/goals", USERS.soldier.token);
+    expect(goals.status).toBe(200);
+    const editableGoal = (goals.body as { title: string; approvalStatus: string }[])
+      .find((goal) => ["DRAFT", "NEEDS_REVISION"].includes(goal.approvalStatus));
+    test.skip(!editableGoal, "Requires a Soldier-owned draft or revision-requested Goal fixture.");
+
+    await page.goto("/support-form/goals?formId=test-sf-davis-1783951336663");
+    await expect(page.getByRole("button", { name: `Edit ${editableGoal!.title}` })).toBeVisible({ timeout: 45_000 });
+    await page.getByRole("button", { name: `Edit ${editableGoal!.title}` }).click();
+    const editor = page.getByRole("heading", { name: "Edit goal" }).locator("..");
+    const updatedDescription = "Updated through the disposable correction-loop fixture.";
+    await editor.getByLabel("Goal and expectation").fill(updatedDescription);
+    await editor.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.getByText(updatedDescription)).toBeVisible({ timeout: 45_000 });
+
+    const goalCard = page.locator("article").filter({ hasText: editableGoal!.title });
+    await goalCard.getByRole("button", { name: "Submit for rater review" }).click();
+    await expect(goalCard.getByText("PENDING RATER REVIEW")).toBeVisible({ timeout: 45_000 });
+
+    await loginAs(page, USERS.rater);
+    await page.goto("/support-form/goals?formId=test-sf-davis-1783951336663");
+    const raterGoalCard = page.locator("article").filter({ hasText: editableGoal!.title });
+    await raterGoalCard.getByRole("button", { name: "Review goal" }).click();
+    await raterGoalCard.getByRole("button", { name: "Approve goal" }).click();
+    await expect(raterGoalCard.getByText("APPROVED")).toBeVisible({ timeout: 45_000 });
+  });
+
   test("keeps documentation signals out of the Soldier view while allowing rater progress review", async ({ page }) => {
     await loginAs(page, USERS.soldier);
     const forms = await apiFetch(page, "/support-forms?soldierId=dev-sgt-davis", USERS.soldier.token);

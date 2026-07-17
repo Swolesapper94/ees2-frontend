@@ -47,6 +47,21 @@ test.describe("API – GET /evaluations", () => {
     }, `${API}/evaluations`);
     expect(result.status).toBe(401);
   });
+
+  test("returns 401 for a malformed bearer token", async ({ page }) => {
+    await page.goto("/");
+    const result = await apiFetch(page, "/evaluations", "Bearer malformed-token");
+    expect(result.status).toBe(401);
+  });
+
+  test("continues serving valid development credentials after a malformed token", async ({ page }) => {
+    await page.goto("/");
+    const invalid = await apiFetch(page, "/evaluations", "Bearer malformed-token");
+    expect(invalid.status).toBe(401);
+
+    const valid = await apiFetch(page, "/evaluations", USERS.rater.token);
+    expect(valid.status).toBe(200);
+  });
 });
 
 test.describe("API – GET /evaluations/:id", () => {
