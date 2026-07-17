@@ -73,6 +73,28 @@ test.describe("Goal tracking privacy and progress", () => {
     await expect(raterGoalCard.getByText("APPROVED")).toBeVisible({ timeout: 45_000 });
   });
 
+  test("lets the rater request revision with guidance", async ({ page }) => {
+    test.setTimeout(60_000);
+    const title = "Fixture goal for rater revision validation";
+    const guidance = "Add the measurable readiness standard before approval.";
+
+    await loginAs(page, USERS.rater);
+    await page.goto("/support-form/goals?formId=test-sf-davis-1783951336663");
+    const raterGoalCard = page.locator("article").filter({ hasText: title });
+    await expect(raterGoalCard.getByRole("button", { name: "Review goal" })).toBeVisible({ timeout: 45_000 });
+    await raterGoalCard.getByRole("button", { name: "Review goal" }).click();
+    await raterGoalCard.getByRole("button", { name: "Request revision" }).click();
+    await raterGoalCard.getByLabel("Revision guidance").fill(guidance);
+    await raterGoalCard.getByRole("button", { name: "Send revision request" }).click();
+    await expect(raterGoalCard.getByText("NEEDS REVISION")).toBeVisible({ timeout: 45_000 });
+
+    await loginAs(page, USERS.soldier);
+    await page.goto("/support-form/goals?formId=test-sf-davis-1783951336663");
+    const soldierGoalCard = page.locator("article").filter({ hasText: title });
+    await expect(soldierGoalCard.getByText("NEEDS REVISION")).toBeVisible({ timeout: 45_000 });
+    await expect(soldierGoalCard.getByText(guidance)).toBeVisible({ timeout: 45_000 });
+  });
+
   test("keeps documentation signals out of the Soldier view while allowing rater progress review", async ({ page }) => {
     await loginAs(page, USERS.soldier);
     const forms = await apiFetch(page, "/support-forms?soldierId=dev-sgt-davis", USERS.soldier.token);
