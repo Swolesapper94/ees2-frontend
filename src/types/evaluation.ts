@@ -237,7 +237,18 @@ export interface Evaluation {
 }
 
 export interface ConsistencyFlag {
-  code: string;
+  code:
+    | "SECTION_INCOMPLETE"
+    | "EMPTY_SECTION"
+    | "BOX_NARRATIVE_MISMATCH"
+    | "DUPLICATE_BULLET"
+    | "RATING_NARRATIVE_STRENGTH"
+    | "COUNSELING_GAP"
+    | "SR_PROFILE_MQ_WARNING"
+    | "UNSUPPORTED_CLAIM"
+    | "PROHIBITED_LANGUAGE"
+    | "GENERIC_BULLET"
+    | string;
   // MVP audit 5.14 — severity taxonomy expanded from flat ERROR/WARNING/INFO.
   // BLOCKING_ERROR must be fixed before proceeding; CONFIRMATION_REQUIRED
   // must be explicitly acknowledged (like WARNING) but represents a

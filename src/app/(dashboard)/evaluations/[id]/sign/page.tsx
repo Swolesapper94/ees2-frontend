@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { api } from "@/lib/api/client";
+import { ApiError, api } from "@/lib/api/client";
 import {
   SECTION_LABELS,
   RATING_BINARY_LABELS,
   RATING_FOUR_LEVEL_LABELS,
   SENIOR_RATER_LABELS,
 } from "@/lib/utils/form-constants";
-import type { EvalSection, EvalStatus, SeniorRaterRating } from "@/types/evaluation";import { Skeleton } from "@/components/ui/skeleton";
+import type { EvalSection, EvalStatus, SeniorRaterRating } from "@/types/evaluation";
+import { Skeleton } from "@/components/ui/skeleton";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type SignRole = "RATER" | "SENIOR_RATER" | "REVIEWER" | "SOLDIER";
@@ -67,7 +68,61 @@ const PART_IV_ORDER = [
   "ACHIEVES",
 ] as const;
 
+function requestErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    const details = error.details;
+    if (
+      typeof details === "object" &&
+      details !== null &&
+      "error" in details &&
+      typeof details.error === "string"
+    ) {
+      return details.error;
+    }
+    return "Request failed: " + error.status;
+  }
+  return "Unable to complete this signature action.";
+}
+
 // ── Eval Preview ──────────────────────────────────────────────────────────────
+
+function ToastMessage({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const fade = setTimeout(() => setVisible(false), 3300);
+    const dismiss = setTimeout(onDismiss, 4000);
+    return () => {
+      clearTimeout(fade);
+      clearTimeout(dismiss);
+    };
+  }, [onDismiss]);
+
+  return (
+    <div
+      role="alert"
+      className={
+        "fixed right-5 top-20 z-[80] max-w-sm rounded-sm border border-red-200 bg-red-50 p-4 text-sm text-red-900 shadow-lg transition-all duration-700 " +
+        (visible ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0")
+      }
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-semibold">Signature blocked</p>
+          <p className="mt-1 text-xs">{message}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="shrink-0 text-xs font-semibold text-red-700 hover:text-red-900"
+          aria-label="Dismiss error message"
+        >
+          x
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {
   return (
@@ -408,6 +463,8 @@ export default function SignPage() {
   const [consentRole, setConsentRole] = useState<SignRole | null>(null);
   const [consentReady, setConsentReady] = useState(false);
   const [typedName, setTypedName] = useState("");
+  const [signError, setSignError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const evalScrollRef = useRef<HTMLDivElement>(null);
 
@@ -444,16 +501,24 @@ export default function SignPage() {
     setConsentRole(role);
     setConsentReady(false);
     setTypedName("");
+    setSignError(null);
+    setToastMessage(null);
     evalScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function confirmSign() {
     if (!consentRole || typedName.toUpperCase() !== expectedName) return;
     setSigning(consentRole);
+    setSignError(null);
+    setToastMessage(null);
     try {
       await api.post(`/evaluations/${id}/sign`, { role: consentRole, action: "SIGN", nameConfirmation: typedName });
       await loadData();
       setConsentRole(null);
+    } catch (error) {
+      const message = requestErrorMessage(error);
+      setSignError(message);
+      setToastMessage(message);
     } finally {
       setSigning(null);
     }
@@ -461,11 +526,20 @@ export default function SignPage() {
 
   async function handleDeclineConfirm(role: SignRole) {
     setSigning(role);
-    await api.post(`/evaluations/${id}/sign`, { role, action: "DECLINE", declineReason });
-    await loadData();
-    setSigning(null);
-    setShowDecline(null);
-    setDeclineReason("");
+    setSignError(null);
+    setToastMessage(null);
+    try {
+      await api.post(`/evaluations/${id}/sign`, { role, action: "DECLINE", declineReason });
+      await loadData();
+      setShowDecline(null);
+      setDeclineReason("");
+    } catch (error) {
+      const message = requestErrorMessage(error);
+      setSignError(message);
+      setToastMessage(message);
+    } finally {
+      setSigning(null);
+    }
   }
 
   if (loading) return (
@@ -484,7 +558,11 @@ export default function SignPage() {
   if (!evalData) return <p className="p-6 text-sm text-red-600">Evaluation not found.</p>;
 
   return (
-    <div className="flex h-full gap-0 overflow-hidden">
+    <>
+      {toastMessage && (
+        <ToastMessage message={toastMessage} onDismiss={() => setToastMessage(null)} />
+      )}
+      <div className="flex h-full gap-0 overflow-hidden">
       {/* Left: Evaluation Document */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden border-r border-border">
         <div className="shrink-0 px-6 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
@@ -511,6 +589,11 @@ export default function SignPage() {
           </p>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-4">
+          {signError && (
+            <div className="mb-3 rounded-sm border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              {signError}
+            </div>
+          )}
           <SignaturePanel
             signatures={sigMap}
             requiresReviewer={evalData.requiresSupplementaryReview}
@@ -533,6 +616,7 @@ export default function SignPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

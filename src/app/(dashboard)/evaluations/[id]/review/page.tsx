@@ -272,6 +272,7 @@ export default function ReviewPage() {
         flags={flags}
         onClose={() => setShowModal(false)}
         onProceed={handleProceedToPDF}
+        proceedLabel="Download PDF"
       />
     </div>
   );

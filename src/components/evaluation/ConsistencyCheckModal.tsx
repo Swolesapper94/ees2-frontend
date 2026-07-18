@@ -12,6 +12,7 @@ export interface ConsistencyCheckModalProps {
   flags?: ConsistencyFlag[];
   onClose?: () => void;
   onProceed?: () => void;
+  proceedLabel?: string;
 }
 
 const SEVERITY_STYLES: Record<string, string> = {
@@ -29,6 +30,7 @@ const SEVERITY_ICON: Record<string, string> = {
 };
 
 const FLAG_LABELS: Record<string, string> = {
+  SECTION_INCOMPLETE: "Incomplete Section",
   BOX_NARRATIVE_MISMATCH: "Rating-Narrative Mismatch",
   DUPLICATE_BULLET: "Duplicate Bullet",
   RATING_NARRATIVE_STRENGTH: "Narrative Strength",
@@ -42,9 +44,9 @@ const FLAG_LABELS: Record<string, string> = {
 };
 
 /**
- * Surfaces the 6-type consistency check before routing to SR.
- * Errors block proceeding. Warnings must be explicitly acknowledged.
- * See EES2-AGENT-INSTRUCTIONS §10.
+ * Whole-report HDQA/workflow preflight. This does not replace the per-bullet
+ * AI compliance checks; it catches cross-section, routing, and final-form
+ * issues that only exist once the report is assembled.
  */
 export function ConsistencyCheckModal({
   evalId,
@@ -52,6 +54,7 @@ export function ConsistencyCheckModal({
   flags: initialFlags,
   onClose,
   onProceed,
+  proceedLabel = "Continue",
 }: ConsistencyCheckModalProps) {
   const [flags, setFlags] = useState<ConsistencyFlag[] | null>(initialFlags ?? null);
   const [loading, setLoading] = useState(false);
@@ -103,7 +106,7 @@ export function ConsistencyCheckModal({
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-base font-bold tracking-tight">Pre-Submission Check</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            6-point consistency check before routing to Senior Rater
+            HDQA-style preflight before signature, final-form review, and PDF export
           </p>
         </div>
 
@@ -111,8 +114,7 @@ export function ConsistencyCheckModal({
           {flags === null && !loading && (
             <div className="py-6 text-center space-y-3">
               <p className="text-sm text-muted-foreground">
-                Checks prohibited language, bullet format, rating-narrative alignment,
-                duplicate detection, completeness, and SR profile distribution.
+                Checks required section completion, prohibited language, unsupported facts, duplicate bullets, rating-narrative alignment, generic bullets, counseling gaps, and senior-rater profile risk.
               </p>
               <button
                 type="button"
@@ -285,7 +287,7 @@ export function ConsistencyCheckModal({
               onClick={onProceed}
               className="rounded bg-[#1A3010] px-4 py-1.5 text-sm font-medium text-white disabled:opacity-40"
             >
-              {flags === null ? "Run Check First" : canProceed ? "Route to SR →" : "Cannot Proceed"}
+              {flags === null ? "Run Check First" : canProceed ? proceedLabel : "Cannot Proceed"}
             </button>
           </div>
         </div>
