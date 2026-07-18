@@ -19,7 +19,9 @@ interface DashboardResponse extends DashboardShellProps {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { data, error, isLoading } = useApiGet<DashboardResponse>("/dashboard");
+  const { data, error, isLoading } = useApiGet<DashboardResponse>("/dashboard", {
+    refreshInterval: 30_000,
+  });
 
   useEffect(() => {
     // Redirect to /dev-login if no auth token present

@@ -41,7 +41,9 @@ interface EvalWithChain extends Evaluation {
 }
 
 export default function EvaluationsPage() {
-  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations");
+  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations", {
+    refreshInterval: 30_000,
+  });
 
   return (
     <div className="p-6">

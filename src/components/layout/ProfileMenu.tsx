@@ -11,6 +11,7 @@ import {
 import { SupportChatModal } from "@/components/support/SupportChatModal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { api } from "@/lib/api/client";
+import { clearClientApiCache, notifyAuthChanged } from "@/lib/api/cache";
 import { NOTIFICATIONS_REFRESH_EVENT } from "@/hooks/useNotifications";
 import { cn } from "@/lib/utils/cn";
 
@@ -74,7 +75,10 @@ export function ProfileMenu() {
 
   function handleSignOut() {
     if (typeof window !== "undefined") {
+      void clearClientApiCache();
       localStorage.removeItem("devAuth");
+      localStorage.removeItem("devProfileEmail");
+      notifyAuthChanged();
     }
     router.push("/dev-login");
   }

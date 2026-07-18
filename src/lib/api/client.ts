@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { invalidateAfterMutation } from "./cache";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -9,6 +10,28 @@ export class ApiError extends Error {
     super(message);
     this.status = status;
     this.details = details;
+  }
+}
+
+export function currentDevAuthCacheScope(): string {
+  if (typeof window === "undefined") return "server";
+  return localStorage.getItem("devAuth") ?? "anonymous";
+}
+
+export async function getAuthCacheScope(): Promise<string> {
+  if (typeof window !== "undefined") {
+    const devAuth = localStorage.getItem("devAuth");
+    if (devAuth) return devAuth;
+  }
+
+  try {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.user?.id ? `supabase:${session.user.id}` : "anonymous";
+  } catch {
+    return "anonymous";
   }
 }
 
@@ -51,6 +74,7 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
     headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
     signal: opts.signal,
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -61,6 +85,10 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
       details = await res.text();
     }
     throw new ApiError(res.status, `Request failed: ${res.status}`, details);
+  }
+
+  if ((opts.method ?? "GET") !== "GET") {
+    void invalidateAfterMutation(path);
   }
 
   if (res.status === 204) return undefined as T;
@@ -82,18 +110,21 @@ export const api = {
       method: "POST",
       headers,
       body: formData,
+      cache: "no-store",
     });
     if (!res.ok) {
       let details: unknown;
       try { details = await res.json(); } catch { details = await res.text(); }
       throw new ApiError(res.status, `Upload failed: ${res.status}`, details);
     }
-    return (await res.json()) as T;
+    const data = (await res.json()) as T;
+    void invalidateAfterMutation(path);
+    return data;
   },
 
   /** Authenticated binary fetch for documents that cannot be opened as a public URL. */
   blob: async (path: string): Promise<Blob> => {
-    const res = await fetch(`${API_URL}/api${path}`, { headers: await authHeader() });
+    const res = await fetch(`${API_URL}/api${path}`, { headers: await authHeader(), cache: "no-store" });
     if (!res.ok) throw new ApiError(res.status, `Request failed: ${res.status}`);
     return res.blob();
   },

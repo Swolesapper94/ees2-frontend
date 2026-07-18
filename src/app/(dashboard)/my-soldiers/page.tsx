@@ -57,7 +57,9 @@ interface CounselingData {
 
 export default function MySoldiersPage() {
   const { data: currentUser } = useApiGet<CurrentUser>("/users/me");
-  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations?role=rater");
+  const { data: evals = [], error, isLoading } = useApiGet<EvalWithChain[]>("/evaluations?role=rater", {
+    refreshInterval: 30_000,
+  });
   const { data: counselingData } = useApiGet<CounselingData>("/dashboard/counseling");
 
   return (

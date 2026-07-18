@@ -47,7 +47,9 @@ interface EvalWithChain extends Evaluation {
 const ALL_STATUSES = Object.keys(STATUS_LABELS) as EvalStatus[];
 
 export default function AllEvaluationsPage() {
-  const { data: evals = [], error, isLoading, mutate } = useApiGet<EvalWithChain[]>("/evaluations");
+  const { data: evals = [], error, isLoading, mutate } = useApiGet<EvalWithChain[]>("/evaluations", {
+    refreshInterval: 30_000,
+  });
   const [filterStatus, setFilterStatus] = useState<EvalStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [evaluationToDelete, setEvaluationToDelete] = useState<EvalWithChain | null>(null);

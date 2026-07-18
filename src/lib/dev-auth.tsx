@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { clearClientApiCache, notifyAuthChanged } from "@/lib/api/cache";
 
 /**
  * Development-only auth provider.
@@ -15,7 +16,9 @@ export function DevAuthProvider({ children }: { children: React.ReactNode }) {
     const params = new URLSearchParams(window.location.search);
     const devToken = params.get("dev");
     if (devToken) {
+      void clearClientApiCache();
       localStorage.setItem("devAuth", `Bearer dev:${devToken}`);
+      notifyAuthChanged();
       window.location.replace(window.location.pathname);
       return;
     }

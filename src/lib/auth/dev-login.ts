@@ -1,3 +1,5 @@
+import { clearClientApiCache, notifyAuthChanged } from "@/lib/api/cache";
+
 // ─────────────────────────────────────────────────────────────────
 // Dev Login & CAC Simulation (Delta Section 16)
 //
@@ -166,6 +168,8 @@ export function devAuthHeaderForProfile(profile: DevProfile): string {
 /** Persists the selected profile's dev credentials for subsequent API calls. */
 export function loginAsDevProfile(profile: DevProfile): void {
   if (typeof window === "undefined") return;
+  void clearClientApiCache();
   localStorage.setItem("devAuth", devAuthHeaderForProfile(profile));
   localStorage.setItem("devProfileEmail", profile.email);
+  notifyAuthChanged();
 }
