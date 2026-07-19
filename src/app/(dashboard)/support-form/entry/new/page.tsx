@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
@@ -54,6 +54,10 @@ function newDraft(): ArtifactDraft {
 }
 
 export default function NewEntryPage() {
+  return <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Loading entry form...</p>}><NewEntryContent /></Suspense>;
+}
+
+function NewEntryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const formId = searchParams.get("formId");

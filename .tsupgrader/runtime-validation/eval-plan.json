@@ -1,0 +1,26 @@
+{
+  "generatedAt": "2026-07-19T08:22:31Z",
+  "generatedOnPlatform": "darwin",
+  "projectType": "webapp",
+  "setup": [],
+  "assertions": [
+    {
+      "name": "typecheck-no-emit",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "typecheck"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 180
+    },
+    {
+      "name": "next-build",
+      "kind": "process",
+      "command": "npm",
+      "args": ["run", "build"],
+      "verificationMethod": "exit-code",
+      "expected": "0",
+      "timeoutSeconds": 300
+    }
+  ]
+}

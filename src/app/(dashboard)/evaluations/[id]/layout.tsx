@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { SoldierHeader } from "@/components/layout/SoldierHeader";
 import { SectionNav } from "@/components/evaluation/SectionNav";
@@ -20,6 +20,10 @@ interface EvalMeta {
 }
 
 export default function EvaluationLayout({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading evaluation...</div>}><EvaluationLayoutContent>{children}</EvaluationLayoutContent></Suspense>;
+}
+
+function EvaluationLayoutContent({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
   const searchParams = useSearchParams();

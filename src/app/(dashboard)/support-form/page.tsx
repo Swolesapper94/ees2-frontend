@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,6 +88,10 @@ function StartSupportFormModal({ candidates, onClose, onCreated }: { candidates:
 }
 
 export default function SupportFormPage() {
+  return <Suspense fallback={<div className="space-y-4 p-6"><Skeleton className="h-8 w-48" /><Skeleton className="h-32 w-full" /></div>}><SupportFormContent /></Suspense>;
+}
+
+function SupportFormContent() {
   const searchParams = useSearchParams();
   const formId = searchParams.get("formId");
   const assisting = searchParams.get("assisting");

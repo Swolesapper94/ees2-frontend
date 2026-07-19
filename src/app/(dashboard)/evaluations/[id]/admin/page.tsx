@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,10 @@ function SourceBadge({ children, tone = "neutral" }: { children: string; tone?: 
 }
 
 export default function AdminDataPage() {
+  return <Suspense fallback={<div className="space-y-4 p-6"><Skeleton className="h-8 w-56" /><Skeleton className="h-40 w-full" /></div>}><AdminDataContent /></Suspense>;
+}
+
+function AdminDataContent() {
   const params = useParams();
   const id = params.id as string;
   const router = useRouter();

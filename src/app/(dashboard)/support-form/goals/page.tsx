@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ApiError, api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,10 @@ const ASSESSMENTS = ["NOT_STARTED", "IN_PROGRESS", "ACHIEVED", "PARTIALLY_ACHIEV
 const GOAL_CATEGORIES = ["ROUTINE", "PROBLEM_SOLVING", "INNOVATIVE", "PERSONAL_DEVELOPMENT", "OTHER"];
 
 export default function SupportFormGoalsPage() {
+  return <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Loading goals...</p>}><SupportFormGoalsContent /></Suspense>;
+}
+
+function SupportFormGoalsContent() {
   const search = useSearchParams();
   const formId = search.get("formId");
   const [goals, setGoals] = useState<Goal[]>([]);

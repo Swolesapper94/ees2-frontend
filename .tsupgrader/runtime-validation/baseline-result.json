@@ -1,0 +1,38 @@
+{
+  "planHash": "bbbdf208fe3c4f451594a0fe1156afc35e15b004065df48b72347261d1939f87",
+  "phase": "baseline",
+  "recordedAtUtc": "2026-07-19T13:26:31.1221750Z",
+  "retryCount": 0,
+  "resetBaseline": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "typecheck-no-emit",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\n\u003E ees2-frontend@0.1.0 typecheck\n\u003E tsc --noEmit\n\n",
+        "durationMs": 1088
+      },
+      {
+        "name": "next-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 0,
+        "outputSample": "\n\u003E ees2-frontend@0.1.0 build\n\u003E next build\n\n\u25B2 Next.js 16.2.9 (Turbopack)\n- Environments: .env.local\n\n  Creating an optimized production build ...\n\u2713 Compiled successfully in 1627ms\n  Running TypeScript ...\n  Finished TypeScript in 2.7s ...\n  Collecting page data using 13 workers ...\n  Generating static pages using 13 workers (0/22) ...\n  Generating static pages using 13 workers (5/22) \n  Generating static pages using 13 workers (10/22) \n  Generating static pages using 13 workers (16/22) \n\u2713 Generating static pages using 13 workers (22/22) in 219ms\n  Finalizing page optimization ...\n\nRoute (app)\n\u250C \u25CB /\n\u251C \u25CB /_not-found\n\u251C \u25CB /access-assistance\n\u251C \u25CB /admin/identity-access\n\u251C \u25CB /admin/rating-chains\n\u251C \u25CB /admin/units\n\u251C \u25CB /admin/users\n\u251C \u25CB /all-evaluations\n\u251C \u25CB /commander\n\u251C \u25CB /dashboard\n\u251C \u25CB /delegates\n\u251C \u25CB /dev-login\n\u251C \u25CB /dev/personas\n\u251C \u25CB /evaluations\n\u251C \u0192 /evaluations/[id]\n\u251C \u0192 /evaluations/[id]/[section]\n\u251C \u0192 /evaluations/[id]/admin\n\u251C \u0192 /evaluations/[id]/duty\n\u251C \u0192 /evaluations/[id]/final-review\n\u251C \u0192 /evaluations/[id]/review\n\u251C \u0192 /evaluations/[id]/senior-rater\n\u251C \u0192 /evaluations/[id]/sign\n\u251C \u0192 /evaluations/[id]/timeline\n\u251C \u0192 /evaluations/new\n\u251C \u25CB /my-soldiers\n\u251C \u25CB /profile\n\u251C \u25CB /rating-scheme\n\u251C \u25CB /settings\n\u251C \u25CB /support-form\n\u251C \u0192 /support-form/entry/[id]\n\u251C \u25CB /support-form/entry/new\n\u2514 \u25CB /support-form/goals\n\n\n\u25CB  (Static)   prerendered as static content\n\u0192  (Dynamic)  server-rendered on demand\n\n",
+        "durationMs": 5649
+      }
+    ]
+  }
+}

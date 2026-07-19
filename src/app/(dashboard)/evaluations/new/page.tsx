@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { EvalCreationWizard } from "@/components/evaluation/EvalCreationWizard";
 import { SoldierInitWizard } from "@/components/evaluation/SoldierInitWizard";
 import { api } from "@/lib/api/client";
@@ -26,7 +26,10 @@ interface RatingChain {
 type Mode = "choose" | "soldier" | "rater";
 
 export default function NewEvaluationPage() {
-  const router = useRouter();
+  return <Suspense fallback={<div className="p-6">Loading...</div>}><NewEvaluationPageContent /></Suspense>;
+}
+
+function NewEvaluationPageContent() {
   const params = useSearchParams();
   const prefillChainId = params.get("chainId") ?? undefined;
   const forceMode = params.get("mode") as Mode | null;
@@ -44,19 +47,17 @@ export default function NewEvaluationPage() {
   }, []);
 
   return (
-    <Suspense fallback={<div className="p-6">Loading...</div>}>
-      <NewEvaluationPageContent
+      <NewEvaluationExperience
         mode={mode}
         setMode={setMode}
         chains={chains}
         chainsLoading={chainsLoading}
         prefillChainId={prefillChainId}
       />
-    </Suspense>
   );
 }
 
-interface NewEvaluationPageContentProps {
+interface NewEvaluationExperienceProps {
   mode: Mode;
   setMode: (mode: Mode) => void;
   chains: RatingChain[];
@@ -64,13 +65,13 @@ interface NewEvaluationPageContentProps {
   prefillChainId?: string;
 }
 
-function NewEvaluationPageContent({
+function NewEvaluationExperience({
   mode,
   setMode,
   chains,
   chainsLoading,
   prefillChainId,
-}: NewEvaluationPageContentProps) {
+}: NewEvaluationExperienceProps) {
 
   if (mode === "rater") {
     return (
