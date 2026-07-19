@@ -41,10 +41,10 @@ interface EvalDetail {
   sections: EvalSection[];
   signatures: Signature[];
   ratingChain: {
-    ratedSoldier: { firstName: string; lastName: string; rank: string; mos: string };
-    rater: { firstName: string; lastName: string; rank: string };
-    seniorRater: { firstName: string; lastName: string; rank: string };
-    reviewer?: { firstName: string; lastName: string; rank: string } | null;
+    ratedSoldier: { id: string; firstName: string; lastName: string; rank: string; mos: string };
+    rater: { id: string; firstName: string; lastName: string; rank: string };
+    seniorRater: { id: string; firstName: string; lastName: string; rank: string };
+    reviewer?: { id: string; firstName: string; lastName: string; rank: string } | null;
   };
 }
 
@@ -300,6 +300,7 @@ function EvalPreview({
 function SignaturePanel({
   signatures,
   requiresReviewer,
+  allowedRoles,
   signing,
   showDecline,
   declineReason,
@@ -318,6 +319,7 @@ function SignaturePanel({
 }: {
   signatures: Partial<Record<SignRole, Signature>>;
   requiresReviewer: boolean;
+  allowedRoles: SignRole[];
   signing: SignRole | null;
   showDecline: SignRole | null;
   declineReason: string;
@@ -334,7 +336,7 @@ function SignaturePanel({
   onConfirmSign: () => void;
   onCancelConsent: () => void;
 }) {
-  const visibleRoles = requiresReviewer ? ROLE_ORDER : ROLE_ORDER.filter((r) => r !== "REVIEWER");
+  const visibleRoles = (requiresReviewer ? ROLE_ORDER : ROLE_ORDER.filter((r) => r !== "REVIEWER")).filter((role) => allowedRoles.includes(role));
 
   if (consentRole) {
     const nameMatch = typedName.toUpperCase() === expectedName;
@@ -393,8 +395,14 @@ function SignaturePanel({
     <div className="flex flex-col gap-3">
       <div>
         <h2 className="text-sm font-semibold">Signatures</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Each rating chain member must sign or decline.</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Only your assigned signature role is shown.</p>
       </div>
+
+      {visibleRoles.length === 0 && (
+        <div className="rounded-sm border border-border bg-card p-3 text-sm text-muted-foreground">
+          You can view this evaluation, but you are not assigned a signature role for it.
+        </div>
+      )}
 
       {visibleRoles.map((role) => {
         const sig = signatures[role];
@@ -455,6 +463,7 @@ export default function SignPage() {
   const id = params.id as string;
 
   const [evalData, setEvalData] = useState<EvalDetail | null>(null);
+  const [currentUserId, setCurrentUserId] = useState("");
   const [currentUserName, setCurrentUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState<SignRole | null>(null);
@@ -472,14 +481,21 @@ export default function SignPage() {
   for (const sig of evalData?.signatures ?? []) sigMap[sig.role as SignRole] = sig;
 
   const expectedName = currentUserName.toUpperCase();
+  const allowedSignRoles: SignRole[] = evalData && currentUserId ? [
+    evalData.ratingChain.rater.id === currentUserId ? "RATER" : null,
+    evalData.ratingChain.seniorRater.id === currentUserId ? "SENIOR_RATER" : null,
+    evalData.ratingChain.ratedSoldier.id === currentUserId ? "SOLDIER" : null,
+    evalData.requiresSupplementaryReview && evalData.ratingChain.reviewer?.id === currentUserId ? "REVIEWER" : null,
+  ].filter((role): role is SignRole => Boolean(role)) : [];
 
   async function loadData() {
     const [ev, dashboard] = await Promise.all([
       api.get<EvalDetail>(`/evaluations/${id}`),
-      api.get<{ myUser: { firstName: string; lastName: string } }>("/dashboard"),
+      api.get<{ myUser: { id: string; firstName: string; lastName: string } }>("/dashboard"),
     ]);
     setEvalData(ev);
     if (dashboard.myUser) {
+      setCurrentUserId(dashboard.myUser.id);
       setCurrentUserName(
         `${dashboard.myUser.lastName.toUpperCase()}, ${dashboard.myUser.firstName.toUpperCase()}`,
       );
@@ -597,6 +613,7 @@ export default function SignPage() {
           <SignaturePanel
             signatures={sigMap}
             requiresReviewer={evalData.requiresSupplementaryReview}
+            allowedRoles={allowedSignRoles}
             signing={signing}
             showDecline={showDecline}
             declineReason={declineReason}

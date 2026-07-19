@@ -46,6 +46,7 @@ export interface SoldierCardData {
   };
   myRole: "RATER" | "SENIOR_RATER";
   latestEval: Eval | null;
+  activeSupportFormId: string | null;
   activeSupportFormEntryCount: number;
   sectionCompletionPercent: number;
   overdueMilestone: OverdueMilestone | null;
@@ -72,13 +73,13 @@ function getCTA(
   role: "RATER" | "SENIOR_RATER",
   evalId: string | undefined,
   builderAvailable: boolean,
+  chainId: string,
+  activeSupportFormId: string | null,
 ): { label: string; href: string; disabled: boolean } {
   if (!builderAvailable) {
     return {
       label: "Support Form →",
-      href: evalId
-        ? `/evaluations/${evalId}/duty`
-        : "#",
+      href: activeSupportFormId ? `/support-form?formId=${activeSupportFormId}` : "/support-form",
       disabled: false,
     };
   }
@@ -88,7 +89,7 @@ function getCTA(
   if (role === "RATER") {
     switch (status) {
       case "NOT_STARTED":
-        return { label: "Start Evaluation", href: "/evaluations/new", disabled: false };
+        return { label: "Start Evaluation", href: `/evaluations/new?chainId=${chainId}`, disabled: false };
       case "DRAFT":
         return { label: "Continue Draft", href: base, disabled: false };
       case "RATER_IN_PROGRESS":
@@ -103,7 +104,7 @@ function getCTA(
     // SENIOR_RATER
     switch (status) {
       case "NOT_STARTED":
-        return { label: "Start Evaluation", href: "/evaluations/new", disabled: false };
+        return { label: "Start Evaluation", href: `/evaluations/new?chainId=${chainId}`, disabled: false };
       case "DRAFT":
       case "RATER_IN_PROGRESS":
         return { label: "Awaiting Rater", href: "#", disabled: true };
@@ -120,6 +121,8 @@ export function SoldierCard({ data }: { data: SoldierCardData }) {
     soldier,
     myRole,
     latestEval,
+    chainId,
+    activeSupportFormId,
     sectionCompletionPercent,
     overdueMilestone,
     formType,
@@ -129,7 +132,7 @@ export function SoldierCard({ data }: { data: SoldierCardData }) {
 
   const status = getStatus(latestEval);
   const dueDate = getDueDate(latestEval);
-  const cta = getCTA(status, myRole, latestEval?.id, builderAvailable);
+  const cta = getCTA(status, myRole, latestEval?.id, builderAvailable, chainId, activeSupportFormId);
   const rank = rankAbbr(soldier.rank);
 
   return (

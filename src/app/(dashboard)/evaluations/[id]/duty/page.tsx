@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SupportFormUploadPanel } from "@/components/evaluation/SupportFormUploadPanel";
+import type { SupportFormUploadState } from "@/types/evaluation";
 
 interface DutyData {
   principalDutyTitle: string | null;
@@ -26,11 +28,14 @@ export default function DutyDescriptionPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [draftSource, setDraftSource] = useState<"evaluation" | "support-form" | "generic">("evaluation");
+  const [uploadState, setUploadState] = useState<SupportFormUploadState>({ hasUpload: false });
 
   useEffect(() => {
-    api
-      .get<DutyData>(`/evaluations/${id}`)
-      .then((d) => {
+    Promise.all([
+      api.get<DutyData>(`/evaluations/${id}`),
+      api.get<SupportFormUploadState>(`/support-form-uploads/${id}/status`),
+    ])
+      .then(([d, uploadStatus]) => {
         const rank = d.ratingChain.ratedSoldier.rank;
         const mos = d.ratingChain.ratedSoldier.mos;
         const supportFormTitle = d.supportForm?.dutyTitle ?? "";
@@ -43,6 +48,7 @@ export default function DutyDescriptionPage() {
             `Serves as a ${rank} in MOS ${mos}; responsible for assigned personnel, training, readiness, equipment, and mission execution.`,
         );
         setDraftSource(hasEvaluationDuty ? "evaluation" : hasSupportFormDuty ? "support-form" : "generic");
+        setUploadState(uploadStatus);
       })
       .catch(() => setLoadError("Unable to load duty information. Refresh the page and try again."))
       .finally(() => setLoading(false));
@@ -101,6 +107,17 @@ export default function DutyDescriptionPage() {
       <p className="mb-4 rounded-sm border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
         {sourceMessage}
       </p>
+
+      <section className="mb-4 rounded-md border border-border bg-card p-4">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Uploaded support form evidence</h2>
+        <p className="mb-3 text-xs text-muted-foreground">Upload and review the existing support form here, then draft section-specific bullets from Character, Presence, Intellect, and the other performance tabs.</p>
+        <SupportFormUploadPanel
+          evalId={id}
+          uploadState={uploadState}
+          onUploadComplete={setUploadState}
+          allowDraftFromReviewedFacts={false}
+        />
+      </section>
 
       <div className="space-y-4">
         <div>

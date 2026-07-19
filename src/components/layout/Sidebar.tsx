@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -51,7 +52,20 @@ function Divider() {
 export function Sidebar({ hasSoldiers = true, isCommander = false, canViewAdmin = false }: SidebarProps) {
   return (
     <aside className="flex w-60 flex-col bg-sidebar text-sidebar-text">
-      <div className="px-5 py-4 text-lg font-bold tracking-tight">EES 2.0</div>
+      <div className="px-5 py-4">
+        <div className="flex items-center gap-2">
+          <Image
+            src="/docs/Army_Star.jpg"
+            alt="U.S. Army star logo"
+            width={40}
+            height={40}
+            className="h-10 w-10 rounded-sm border border-white/10 object-cover"
+            priority
+          />
+          <div className="text-lg font-bold tracking-tight">MERIT</div>
+        </div>
+        <div className="mt-1 text-[10px] font-medium uppercase tracking-widest text-sidebar-text/50">Mission Evaluation Record & Insight Tool</div>
+      </div>
       <nav className="flex flex-col gap-0.5 px-2">
         <NavItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} />
         <NavItem href="/evaluations" label="My Eval" icon={Star} />

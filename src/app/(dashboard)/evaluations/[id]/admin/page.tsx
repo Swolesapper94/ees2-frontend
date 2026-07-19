@@ -6,6 +6,28 @@ import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface PersonnelProfile {
+  rank?: string;
+  payGrade?: string;
+  branchOrMOS?: string;
+  dutyTitle?: string;
+  unitName?: string | null;
+  unitUic?: string | null;
+  assignmentStartDate?: string;
+  assignmentEndDate?: string | null;
+  acftStatus?: string;
+  acftScore?: number;
+  acftDate?: string;
+  bodyCompositionStatus?: string;
+  bodyCompositionEffectiveDate?: string;
+  heightInches?: number;
+  weightPounds?: number;
+  personnelSource?: string;
+  sourceLabel?: string | null;
+  sourceStatus?: string;
+  lastRefreshed?: string | null;
+}
+
 interface AdminData {
   id: string;
   formType: string;
@@ -23,6 +45,29 @@ interface AdminData {
     rater: { firstName: string; lastName: string; rank: string };
     seniorRater: { firstName: string; lastName: string; rank: string };
   };
+  ratedSoldierPersonnelProfile?: PersonnelProfile;
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return "Not listed";
+  return new Date(value).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function profileValue(value?: string | number | null): string | number {
+  return value ?? "Not listed";
+}
+
+function ProfileField({ label, value }: { label: string; value?: string | number | null }) {
+  return <div><dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 text-sm font-medium text-foreground">{profileValue(value)}</dd></div>;
+}
+
+function SourceBadge({ children, tone = "neutral" }: { children: string; tone?: "neutral" | "green" | "amber" }) {
+  const className = tone === "green"
+    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+    : tone === "amber"
+      ? "border-amber-200 bg-amber-50 text-amber-800"
+      : "border-border bg-muted/40 text-foreground";
+  return <span className={`rounded-sm border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${className}`}>{children}</span>;
 }
 
 export default function AdminDataPage() {
@@ -111,6 +156,9 @@ export default function AdminDataPage() {
   if (!data) return <p className="text-sm text-red-600">Evaluation not found.</p>;
 
   const s = data.ratingChain.ratedSoldier;
+  const profile = data.ratedSoldierPersonnelProfile;
+  const acft = [profile?.acftStatus, profile?.acftScore ? `${profile.acftScore}` : null].filter(Boolean).join(" · ");
+  const heightWeight = [profile?.heightInches ? `${profile.heightInches} in` : null, profile?.weightPounds ? `${profile.weightPounds} lb` : null].filter(Boolean).join(" / ");
   const rows = [
     ["Soldier", `${s.rank} ${s.lastName}, ${s.firstName}`],
     ["MOS", s.mos],
@@ -132,6 +180,35 @@ export default function AdminDataPage() {
     <div>
       <h1 className="mb-1 text-xl font-bold tracking-tight">Administrative Data</h1>
       <p className="mb-4 text-sm text-muted-foreground">Part I — identity, period, status.</p>
+
+      {profile && <section className="mb-4 rounded-sm border border-border bg-card p-4" aria-label="Rated Soldier source-backed administrative profile">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Rated Soldier Source Profile</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Read-only personnel and readiness context pulled into this evaluation workspace.</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <SourceBadge>{profile.personnelSource ?? "IPPS-A"}</SourceBadge>
+            {profile.sourceLabel && <SourceBadge tone="amber">{profile.sourceLabel}</SourceBadge>}
+            <SourceBadge tone="green">{profile.sourceStatus ?? "CURRENT"}</SourceBadge>
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">Last refreshed: {formatDate(profile.lastRefreshed)}</p>
+        <dl className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ProfileField label="Rank / grade" value={[profile.rank ?? s.rank, profile.payGrade].filter(Boolean).join(" / ")} />
+          <ProfileField label="MOS / branch" value={profile.branchOrMOS ?? s.mos} />
+          <ProfileField label="Duty title" value={profile.dutyTitle} />
+          <ProfileField label="Unit" value={profile.unitName} />
+          <ProfileField label="UIC" value={profile.unitUic} />
+          <ProfileField label="Assignment start" value={formatDate(profile.assignmentStartDate)} />
+          <ProfileField label="Assignment end" value={formatDate(profile.assignmentEndDate)} />
+          <ProfileField label="ACFT" value={acft || null} />
+          <ProfileField label="ACFT date" value={formatDate(profile.acftDate)} />
+          <ProfileField label="Height / weight" value={heightWeight || null} />
+          <ProfileField label="Body composition" value={profile.bodyCompositionStatus} />
+          <ProfileField label="Body comp date" value={formatDate(profile.bodyCompositionEffectiveDate)} />
+        </dl>
+      </section>}
 
       <div className="rounded-sm border border-border overflow-hidden">
         <table className="w-full text-sm">

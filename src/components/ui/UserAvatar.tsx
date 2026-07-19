@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
 
 interface UserAvatarProps {
@@ -29,7 +30,13 @@ export function UserAvatar({
   size = "md",
   className,
 }: UserAvatarProps) {
-  if (src) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (src && !failed) {
     return (
       <div
         className={cn(
@@ -45,6 +52,7 @@ export function UserAvatar({
           fill
           className="object-cover"
           sizes="(max-width: 640px) 32px, 48px"
+          onError={() => setFailed(true)}
         />
       </div>
     );

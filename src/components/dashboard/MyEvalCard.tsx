@@ -52,6 +52,7 @@ interface MyEvalCardProps {
   soldier: User;
   chain: ChainData;
   latestEval: Eval | null;
+  activeSupportFormId: string | null;
   activeSupportFormEntryCount: number;
   formType: EvalFormType;
   evalType: "NCOER" | "OER";
@@ -77,6 +78,7 @@ export function MyEvalCard({
   soldier,
   chain,
   latestEval,
+  activeSupportFormId,
   activeSupportFormEntryCount,
   formType,
   evalType,
@@ -108,7 +110,7 @@ export function MyEvalCard({
               functional now — start logging accomplishments for your next OER.
             </p>
             <div className="mt-3">
-              <Link href="/support-form">
+              <Link href={activeSupportFormId ? `/support-form?formId=${activeSupportFormId}` : "/support-form"}>
                 <Button variant="outline" size="sm">
                   View Support Form
                   {activeSupportFormEntryCount > 0
@@ -220,7 +222,7 @@ export function MyEvalCard({
             <Link href={primaryCTA.href}>
               <Button size="sm">{primaryCTA.label}</Button>
             </Link>
-            <Link href="/support-form">
+            <Link href={activeSupportFormId ? `/support-form?formId=${activeSupportFormId}` : "/support-form"}>
               <Button variant="outline" size="sm">
                 {supportFormLabel}
               </Button>

@@ -74,6 +74,7 @@ export type SupportFormUploadStatus =
   | "EXTRACTING"
   | "PENDING_PARSE"
   | "PARSING"
+  | "REVIEW_REQUIRED"
   | "PENDING_BULLETS"
   | "GENERATING"
   | "COMPLETE"
@@ -86,6 +87,14 @@ export interface BulletSourceSnapshotEntry {
   entryId: string;
   rawText: string;
   artifactCaptions: string[];
+  sourceDocumentId?: string | null;
+  sourceDocumentName?: string | null;
+  sourcePage?: number | null;
+  originalExtractedText?: string | null;
+  reviewedText?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  extractionMethod?: string | null;
 }
 
 export interface UnsupportedClaim {
@@ -121,11 +130,23 @@ export interface AIExtractedEntry {
   impact: string | null;
   date: string | null;
   context: string | null;
+  factCategory: string | null;
+  quantityOrMetric: string | null;
+  sourcePage: number | null;
+  confidence: AIBulletConfidence;
+  sourceDocumentName: string | null;
+  originalExtractedText: string | null;
+  reviewedText: string | null;
+  reviewStatus: "PENDING_REVIEW" | "ACCEPTED" | "EDITED" | "REJECTED";
+  reviewedById: string | null;
+  reviewedAt: string | null;
+  extractionMethod: string | null;
 }
 
 export interface SupportFormUploadState {
   hasUpload: boolean;
   uploadId?: string;
+  originalFileName?: string | null;
   fileUrl?: string;
   fileType?: string;
   parseStatus?: SupportFormUploadStatus;

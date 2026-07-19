@@ -71,9 +71,9 @@ export function SrProfilePanel() {
         </span>
       </div>
 
-      {/* EES 2.0 profile caveat */}
+      {/* MERIT profile caveat */}
       <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2.5 py-1.5 mb-3">
-        Profile reflects evals submitted through EES 2.0. Your full HRC profile includes evals from
+        Profile reflects evals submitted through MERIT. Your full HRC profile includes evals from
         prior systems — log into HRC&apos;s EES to view your complete record.
       </p>
 

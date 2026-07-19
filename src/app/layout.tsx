@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "EES 2.0",
-  description: "Modern, soldier-focused Army evaluation system.",
+  title: "MERIT",
+  description: "Mission Evaluation Record & Insight Tool for Army evaluations.",
 };
 
 export default function RootLayout({

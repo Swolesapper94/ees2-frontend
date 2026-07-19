@@ -22,7 +22,7 @@ const REASON_META: Record<string, { label: string; tooltip?: string }> = {
   PROHIBITED_LANGUAGE: {
     label: "Prohibited language",
     tooltip:
-      'Prohibited language includes superlatives used as gimmicks (e.g., "the best NCO I have ever rated"), future-oriented statements, and references to race, gender, religion, or national origin. EES 2.0\'s language checker intercepts these before submission. (AR 623-3)',
+      'Prohibited language includes superlatives used as gimmicks (e.g., "the best NCO I have ever rated"), future-oriented statements, and references to race, gender, religion, or national origin. MERIT\'s language checker intercepts these before submission. (AR 623-3)',
   },
   MISSING_SIGNATURE: { label: "Missing signature" },
   RATING_PERIOD_ERROR: {
@@ -52,7 +52,7 @@ export function HrcReturnPanel() {
       <div className="flex items-center mb-1">
         <h3 className="text-sm font-semibold text-slate-800">HRC return rate</h3>
         <MetricTooltip
-          content="A return occurs when HRC rejects a submitted evaluation and sends it back for correction. Common causes include administrative errors, prohibited language in narratives, missing or out-of-sequence signatures, and rating period overlaps. Each return delays the official record and is visible in the SR timeliness report. EES 2.0 tracks your return history by cause to help you avoid repeat errors."
+          content="A return occurs when HRC rejects a submitted evaluation and sends it back for correction. Common causes include administrative errors, prohibited language in narratives, missing or out-of-sequence signatures, and rating period overlaps. Each return delays the official record and is visible in the SR timeliness report. MERIT tracks your return history by cause to help you avoid repeat errors."
         />
       </div>
       <p className="text-xs text-slate-400 mb-3">Your lifetime submission history</p>

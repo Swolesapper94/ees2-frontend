@@ -53,7 +53,7 @@ export default function SectionPage() {
         else setNotFound(true);
         setEvaluation(eval_);
         setUploadState(uploadStatus);
-        setAiSuggestions(uploadStatus.bulletSuggestions ?? []);
+        setAiSuggestions((uploadStatus.bulletSuggestions ?? []).filter((suggestion) => suggestion.sectionKey === sectionKey));
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
@@ -66,7 +66,7 @@ export default function SectionPage() {
       api.get<SupportFormUploadState>(`/support-form-uploads/${id}/status`)
         .then((state) => {
           setUploadState(state);
-          setAiSuggestions(state.bulletSuggestions ?? []);
+          setAiSuggestions((state.bulletSuggestions ?? []).filter((suggestion) => suggestion.sectionKey === sectionKey));
         })
         .catch(() => undefined);
     }, 2000);
@@ -83,7 +83,7 @@ export default function SectionPage() {
 
   function handleUploadComplete(state: SupportFormUploadState) {
     setUploadState(state);
-    if (state.bulletSuggestions) setAiSuggestions(state.bulletSuggestions);
+    if (state.bulletSuggestions) setAiSuggestions(state.bulletSuggestions.filter((suggestion) => suggestion.sectionKey === sectionKey));
   }
 
   const currentIndex = SECTION_ORDER.indexOf(sectionSlug);
@@ -130,6 +130,8 @@ export default function SectionPage() {
           </h3>
           <SupportFormUploadPanel
             evalId={id}
+            sectionKey={sectionKey}
+            sectionLabel={label}
             uploadState={uploadState}
             onUploadComplete={handleUploadComplete}
           />

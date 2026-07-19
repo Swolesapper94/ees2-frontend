@@ -14,6 +14,11 @@ interface DashboardResponse extends DashboardShellProps {
     rank: string;
     roles?: string[];
     profilePictureUrl?: string | null;
+    personnelProfile?: DashboardShellProps["myUser"] extends infer User
+      ? User extends { personnelProfile?: infer Profile }
+        ? Profile
+        : never
+      : never;
   };
 }
 
@@ -74,6 +79,7 @@ export default function DashboardPage() {
         lastName: data.myUser.lastName,
         rank: data.myUser.rank,
         profilePictureUrl: data.myUser.profilePictureUrl,
+        personnelProfile: data.myUser.personnelProfile,
       } : undefined}
     />
   );

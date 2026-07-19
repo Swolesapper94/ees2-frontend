@@ -5,11 +5,11 @@ export default function HomePage() {
     <main className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          EES 2.0
+          MERIT
         </h1>
         <p className="mt-2 max-w-md text-muted-foreground">
-          A modern, soldier-focused replacement for the Army&apos;s evaluation
-          system. AI-assisted NCOER writing with continuous support form capture.
+          Mission Evaluation Record &amp; Insight Tool. A modern, soldier-focused
+          Army evaluation platform with AI-assisted NCOER writing and continuous support-form capture.
         </p>
       </div>
       <div className="flex gap-4">

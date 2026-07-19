@@ -13,7 +13,7 @@ interface Message {
 const WELCOME_MESSAGE: Message = {
   role: "assistant",
   content:
-    "Hi, I'm EES Support. I can help you with:\n\n• How to use EES 2.0 features\n• AR 623-3 policy questions\n• Troubleshooting evaluation issues\n• Reporting bugs\n\nWhat can I help you with today?",
+    "Hi, I'm MERIT Support. I can help you with:\n\n• How to use MERIT features\n• AR 623-3 policy questions\n• Troubleshooting evaluation issues\n• Reporting bugs\n\nWhat can I help you with today?",
 };
 
 interface SupportChatModalProps {

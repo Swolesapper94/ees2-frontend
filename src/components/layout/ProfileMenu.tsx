@@ -21,6 +21,7 @@ interface DevAuthUser {
   rank?: string;
   email?: string;
   profilePictureUrl?: string | null;
+  identitySourceRecord?: { sourcePayload?: { profilePhotoSourceSystem?: string; profilePhotoSynchronizedAt?: string } | null } | null;
 }
 
 function getDevUser(): DevAuthUser | null {
@@ -50,6 +51,9 @@ export function ProfileMenu() {
   const router = useRouter();
   const devUser = getDevUser();
   const isDev = process.env.NODE_ENV !== "production";
+  const photoSource = fullUser?.identitySourceRecord?.sourcePayload?.profilePhotoSourceSystem === "MICROSOFT_365_STUB"
+    ? "Profile photo source: Microsoft 365 - demo stub"
+    : undefined;
 
   // Fetch full user data with profile picture URL
   useEffect(() => {
@@ -145,6 +149,7 @@ export function ProfileMenu() {
         >
           <UserAvatar
             src={fullUser?.profilePictureUrl}
+            alt={fullUser?.firstName && fullUser?.lastName ? `${fullUser.rank ?? ""} ${fullUser.firstName} ${fullUser.lastName} profile avatar` : "Profile avatar"}
             initials={getInitials(devUser)}
             size="md"
           />
@@ -157,13 +162,15 @@ export function ProfileMenu() {
               <div className="flex items-center gap-2.5">
                 <UserAvatar
                   src={fullUser?.profilePictureUrl}
+                  alt={fullUser?.firstName && fullUser?.lastName ? `${fullUser.rank ?? ""} ${fullUser.firstName} ${fullUser.lastName} profile avatar` : "Profile avatar"}
                   initials={getInitials(devUser)}
                   size="sm"
                 />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-foreground">
-                    {devUser?.email?.replace("dev:", "") ?? "Soldier"}
+                    {fullUser?.rank && fullUser?.lastName ? `${fullUser.rank} ${fullUser.lastName}` : devUser?.email?.replace("dev:", "") ?? "Soldier"}
                   </p>
+                  {photoSource && <p className="text-[10px] text-muted-foreground">{photoSource}</p>}
                   {isDev && (
                     <p className="text-[10px] font-medium uppercase tracking-wider text-amber-600">
                       Dev Mode

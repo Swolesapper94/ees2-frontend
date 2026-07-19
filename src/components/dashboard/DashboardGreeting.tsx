@@ -4,7 +4,8 @@ interface DashboardGreetingProps {
   firstName: string;
   lastName: string;
   rank: string;
-  profilePictureUrl?: string | null;
+  dutyTitle?: string | null;
+  unitName?: string | null;
   recap: string;
 }
 
@@ -16,29 +17,30 @@ function greetingForCurrentTime(): string {
 }
 
 /**
- * Personalized dashboard greeting header with rank insignia and soldier name.
- * Format: "(Rank Picture) (Rank) John Smith's Dashboard"
- *
- * Reuses `RankInsignia` (rather than a bespoke <Image>) so missing artwork
- * gracefully falls back to a text badge instead of a broken image — see
- * RankInsignia.tsx for current rank-image coverage.
+ * Personalized dashboard greeting header with profile avatar and source label.
  */
 export function DashboardGreeting({
   firstName,
   lastName,
   rank,
-  profilePictureUrl,
+  dutyTitle,
+  unitName,
   recap,
 }: DashboardGreetingProps) {
   return (
-    <section className="flex items-start gap-3" aria-label="Dashboard greeting">
+    <section className="flex items-start gap-4" aria-label="Dashboard greeting">
       <RankInsignia rank={rank} size="lg" />
 
       <div className="min-w-0">
         <h1 className="text-2xl font-bold tracking-tight">
-          {greetingForCurrentTime()}, {rank} {firstName} {lastName}
+          {greetingForCurrentTime()}, {rank} {lastName}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">{recap}</p>
+        {(dutyTitle || unitName) && (
+          <p className="mt-1 text-sm font-medium text-foreground">
+            {[dutyTitle, unitName].filter(Boolean).join(" · ")}
+          </p>
+        )}
+        <p className="mt-2 text-sm text-muted-foreground">{recap}</p>
       </div>
     </section>
   );

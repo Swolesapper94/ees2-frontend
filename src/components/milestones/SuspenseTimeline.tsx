@@ -49,7 +49,7 @@ export function SuspenseTimeline({ milestones, className }: SuspenseTimelineProp
             <div
               key={m.type}
               className="rounded-sm border border-border bg-card p-2.5 text-xs"
-              title={`${meta.label}: ${meta.why}`}
+              title={`${meta.label}: ${meta.dueRule}. ${meta.why}`}
             >
               <div
                 className={cn(
@@ -72,7 +72,6 @@ export function SuspenseTimeline({ milestones, className }: SuspenseTimelineProp
                 <p className="text-muted-foreground">
                   <span className="font-medium text-foreground">Due:</span> {format(new Date(m.dueDate), "d MMM yyyy")}
                 </p>
-                <p className="text-muted-foreground">{meta.dueRule}</p>
                 <p className="text-muted-foreground">{meta.why}</p>
               </div>
             </div>
