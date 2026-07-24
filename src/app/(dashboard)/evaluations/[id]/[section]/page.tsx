@@ -165,6 +165,8 @@ export default function SectionPage() {
             dutyTitle: evaluation?.principalDutyTitle ?? evaluation?.supportForm?.dutyTitle ?? "Soldier",
           }}
           supportFormEntries={evaluation?.supportForm?.entries ?? []}
+          supportFormObservations={evaluation?.supportForm?.observations ?? []}
+          canUseRaterEvidence={Boolean(evaluation?.canUseRaterEvidence)}
           uploadedSupportFormFileType={uploadState.hasUpload ? uploadState.fileType : undefined}
         />
       )}

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" role="img" aria-labelledby="title desc">
+  <title id="title">Demo ACFT scorecard</title>
+  <desc id="desc">Mock evidence fixture showing an ACFT score of 540 for SGT James Davis.</desc>
+  <rect width="900" height="560" fill="#f5f5f0"/>
+  <rect x="38" y="38" width="824" height="484" fill="#ffffff" stroke="#1b2533" stroke-width="4"/>
+  <text x="78" y="105" fill="#1b2533" font-family="Arial, sans-serif" font-size="27" font-weight="700">DEMO ONLY - ACFT SCORECARD</text>
+  <line x1="78" y1="127" x2="822" y2="127" stroke="#4b5320" stroke-width="5"/>
+  <text x="78" y="186" fill="#374151" font-family="Arial, sans-serif" font-size="23">Soldier: SGT James Davis</text>
+  <text x="78" y="228" fill="#374151" font-family="Arial, sans-serif" font-size="23">Assessment date: 09 DEC 2024</text>
+  <text x="78" y="270" fill="#374151" font-family="Arial, sans-serif" font-size="23">Unit: 721st Engineer Company</text>
+  <rect x="78" y="316" width="340" height="125" fill="#4b5320"/>
+  <text x="108" y="365" fill="#ffffff" font-family="Arial, sans-serif" font-size="24" font-weight="700">TOTAL SCORE</text>
+  <text x="108" y="418" fill="#ffffff" font-family="Arial, sans-serif" font-size="52" font-weight="700">540</text>
+  <text x="462" y="362" fill="#374151" font-family="Arial, sans-serif" font-size="22">Fixture evidence for local demo use.</text>
+  <text x="462" y="398" fill="#6b7280" font-family="Arial, sans-serif" font-size="18">Not an official Army record.</text>
+</svg>

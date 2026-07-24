@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { ApiError, api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
+import { GitBranch, Table2 } from "lucide-react";
+import { RatingRelationshipMap } from "@/components/rating-scheme/RatingRelationshipMap";
 
 type Official = { id: string; firstName: string; lastName: string; rank: string };
 type Assignment = {
@@ -33,6 +35,7 @@ export default function RatingSchemePage() {
   const [selected, setSelected] = useState<Assignment | null>(null);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [view, setView] = useState<"map" | "table">("map");
 
   async function loadWorkspace(unitId?: string) {
     setLoading(true); setError(null);
@@ -41,14 +44,26 @@ export default function RatingSchemePage() {
     finally { setLoading(false); }
   }
   useEffect(() => {
-    void loadWorkspace();
-    api.get<UnitScope[]>("/rating-schemes/available-units").then((units) => {
-      setUnitScopes(units);
-      if (units.length) {
-        setSelectedUnitId(units[0]!.id);
-        if (units.length > 1) void loadWorkspace(units[0]!.id);
+    let active = true;
+    async function loadInitialWorkspace() {
+      setLoading(true); setError(null);
+      try {
+        const units = await api.get<UnitScope[]>("/rating-schemes/available-units");
+        if (!active) return;
+        setUnitScopes(units);
+        const initialUnitId = units[0]?.id ?? "";
+        setSelectedUnitId(initialUnitId);
+        const data = await api.get<Workspace>(`/rating-schemes/workspace${initialUnitId ? `?unitId=${encodeURIComponent(initialUnitId)}` : ""}`);
+        if (!active) return;
+        setWorkspace(data); setScheme(data.scheme);
+      } catch (requestError) {
+        if (active) setError(messageFor(requestError, "Unable to load the rating scheme."));
+      } finally {
+        if (active) setLoading(false);
       }
-    }).catch(() => {});
+    }
+    void loadInitialWorkspace();
+    return () => { active = false; };
   }, []);
 
   async function refreshScheme(id: string) { setScheme(await api.get<Scheme>(`/rating-schemes/${id}`)); }
@@ -95,9 +110,16 @@ export default function RatingSchemePage() {
       <Metric label="Approved" value={formatDate(scheme.approvedAt)} />
       <Metric label="Published" value={formatDate(scheme.publishedAt)} />
     </section>
-    <section className="overflow-x-auto border border-border bg-card">
+    <div className="flex items-center justify-between border-b border-border">
+      <div className="flex" role="tablist" aria-label="Rating scheme view">
+        <button type="button" role="tab" aria-selected={view === "map"} onClick={() => setView("map")} className={view === "map" ? "flex items-center gap-2 border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground" : "flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground"}><GitBranch className="h-4 w-4" />Relationship map</button>
+        <button type="button" role="tab" aria-selected={view === "table"} onClick={() => setView("table")} className={view === "table" ? "flex items-center gap-2 border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground" : "flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground"}><Table2 className="h-4 w-4" />Table</button>
+      </div>
+      <p className="pr-3 text-xs text-muted-foreground">{view === "map" ? "Click a rated Soldier to inspect the rating relationship." : "Use the table for complete assignment detail."}</p>
+    </div>
+    {view === "map" ? <RatingRelationshipMap assignments={scheme.assignments} unassignedPersonnel={scheme.coverage.unassignedPersonnel} onSelect={setSelected} /> : <section className="overflow-x-auto border border-border bg-card">
       <table className="min-w-full text-left text-sm"><thead className="border-b border-border bg-muted/30 text-xs uppercase text-muted-foreground"><tr><th className="px-4 py-3">Rated Soldier</th><th className="px-4 py-3">Unit / Section</th><th className="px-4 py-3">Rater</th><th className="px-4 py-3">Intermediate</th><th className="px-4 py-3">Senior Rater</th><th className="px-4 py-3">Effective dates</th><th className="px-4 py-3">Status</th></tr></thead><tbody>{scheme.assignments.map((assignment) => <tr key={assignment.id} onClick={() => setSelected(assignment)} className="cursor-pointer border-b border-border hover:bg-muted/30"><td className="px-4 py-3 font-medium">{fullName(assignment.ratedSoldier)}</td><td className="px-4 py-3 text-muted-foreground">{assignment.unit?.name ?? scheme.unit?.name ?? "Immediate unit"}</td><td className="px-4 py-3">{fullName(assignment.rater)}</td><td className="px-4 py-3">{assignment.intermediateRater ? fullName(assignment.intermediateRater) : "-"}</td><td className="px-4 py-3">{fullName(assignment.seniorRater)}</td><td className="px-4 py-3 text-muted-foreground">{formatDate(assignment.effectiveFrom)} - {assignment.effectiveTo ? formatDate(assignment.effectiveTo) : "Open"}</td><td className="px-4 py-3"><span className={`rounded-sm px-2 py-1 text-xs font-medium ${statusClass[scheme.status] ?? "bg-gray-100 text-gray-700"}`}>{scheme.status.replaceAll("_", " ")}</span></td></tr>)}{scheme.coverage.unassignedPersonnel.map((person) => <tr key={person.id} className="border-b border-border bg-amber-50/50 last:border-0"><td className="px-4 py-3 font-medium">{fullName(person)}</td><td className="px-4 py-3 text-muted-foreground">{scheme.unit?.name ?? "Immediate unit"}</td><td className="px-4 py-3 text-muted-foreground">Unassigned</td><td className="px-4 py-3 text-muted-foreground">-</td><td className="px-4 py-3 text-muted-foreground">Unassigned</td><td className="px-4 py-3 text-muted-foreground">-</td><td className="px-4 py-3"><span className="rounded-sm bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">ASSIGNMENT MISSING</span></td></tr>)}</tbody></table>
-    </section>
+    </section>}
     {builderOpen && <AssignmentBuilder candidates={candidates} scheme={scheme} busy={busy} onCancel={() => setBuilderOpen(false)} onSave={async (body) => { await postAction(`/rating-schemes/${scheme.id}/assignments`, body); setBuilderOpen(false); }} />}
     {selected && <RelationshipDrawer assignment={selected} scheme={scheme} onClose={() => setSelected(null)} />}
   </div>;

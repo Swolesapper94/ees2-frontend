@@ -188,6 +188,15 @@ export function SoldierAccomplishmentsPanel({
                       })}
                     </div>
                   )}
+                  {entry.goalLinks?.length ? (
+                    <div className="flex flex-wrap gap-1.5 text-[11px] text-primary">
+                      {entry.goalLinks.map(({ goal }) => (
+                        <span key={goal.id} className="rounded border border-primary/30 bg-primary/5 px-1.5 py-0.5" title={goal.description}>
+                          Goal: {goal.title}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   {hasFlagged && (
                     <p className="text-[11px] text-amber-700">
                       ⚠ Soldier flagged a possible discrepancy on an attachment — verify before relying on it.

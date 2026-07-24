@@ -74,13 +74,20 @@ export function BulletCard({ text, source, provenance, onEdit, onRemove }: Bulle
             className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
           >
             {showSource ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            View source ({snapshot.length} entr{snapshot.length === 1 ? "y" : "ies"})
+            View evidence trail ({snapshot.length} source{snapshot.length === 1 ? "" : "s"})
           </button>
           {showSource && (
             <div className="mt-1.5 space-y-1.5 rounded bg-muted/50 p-2">
               {snapshot.map((s) => (
                 <div key={s.entryId} className="text-[11px] text-muted-foreground">
+                  <p className="font-medium text-foreground">
+                    {s.sourceType === "PERFORMANCE_OBSERVATION" ? "Rater observation" : s.sourceType === "AI_EXTRACTED_ENTRY" ? "Reviewed uploaded fact" : "Soldier accomplishment"}
+                    {s.sourceLabel ? ` - ${s.sourceLabel}` : ""}
+                    {s.occurredAt ? ` - ${new Date(s.occurredAt).toLocaleDateString()}` : ""}
+                  </p>
                   <p>{s.rawText}</p>
+                  {s.goal && <p className="mt-0.5">Goal context: {s.goal.title}</p>}
+                  {s.counselingState && <p className="mt-0.5">Counseling state: {s.counselingState === "RELEASED_IN_COUNSELING" ? "released through counseling" : "private rater observation"}</p>}
                   {s.artifactCaptions.length > 0 && (
                     <p className="mt-0.5 italic">
                       Evidence: {s.artifactCaptions.join("; ")}

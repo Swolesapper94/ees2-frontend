@@ -8,6 +8,7 @@ import type { ConsistencyFlag, EvalSection, EvalStatus } from "@/types/evaluatio
 import { SECTION_LABELS, RATING_BINARY_LABELS, RATING_FOUR_LEVEL_LABELS } from "@/lib/utils/form-constants";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -28,6 +29,13 @@ interface EvalDetail {
   formType: string;
   principalDutyTitle: string | null;
   sections: EvalSection[];
+  returns?: {
+    id: string;
+    returnReason: "ADMIN_ERROR" | "PROHIBITED_LANGUAGE" | "MISSING_SIGNATURE" | "RATING_PERIOD_ERROR" | "OTHER";
+    returnedAt: string;
+    notes: string | null;
+    resolvedAt: string | null;
+  }[];
   ratingChain: {
     ratedSoldier: { firstName: string; lastName: string; rank: string; mos: string };
     rater: { firstName: string; lastName: string; rank: string };
@@ -126,6 +134,7 @@ export default function ReviewPage() {
   const s = evalData.ratingChain.ratedSoldier;
   const sections = evalData.sections ?? [];
   const completedSections = sections.filter((sec) => sec.isComplete).length;
+  const activeReturn = evalData.status === "RETURNED" ? latestReturn(evalData.returns) : undefined;
 
   return (
     <div className="max-w-2xl">
@@ -133,6 +142,26 @@ export default function ReviewPage() {
       <p className="mb-4 text-sm text-muted-foreground">
         Full evaluation review before signature and PDF generation.
       </p>
+
+      {activeReturn && (
+        <section className="mb-6 rounded-sm border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold">Returned for Correction</h2>
+              <p className="mt-1 text-red-800">
+                {formatReturnReason(activeReturn.returnReason)}
+                {activeReturn.notes ? ` - ${activeReturn.notes}` : ""}
+              </p>
+            </div>
+            <span className="rounded-sm bg-white/70 px-2 py-1 text-xs font-medium text-red-700">
+              {new Date(activeReturn.returnedAt).toLocaleDateString()}
+            </span>
+          </div>
+          <p className="mt-3 text-xs text-red-700">
+            Address the issue, document the correction, then resubmit through the normal routing flow.
+          </p>
+        </section>
+      )}
 
       {/* Summary card */}
       <div className="mb-6 rounded-sm border border-border bg-card p-4">

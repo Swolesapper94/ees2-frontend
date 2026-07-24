@@ -5,6 +5,8 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
+import type { EvaluationReturn } from "@/types/evaluation";
 
 interface PersonnelProfile {
   rank?: string;
@@ -45,6 +47,7 @@ interface AdminData {
     rater: { firstName: string; lastName: string; rank: string };
     seniorRater: { firstName: string; lastName: string; rank: string };
   };
+  returns?: EvaluationReturn[];
   ratedSoldierPersonnelProfile?: PersonnelProfile;
 }
 
@@ -163,6 +166,7 @@ function AdminDataContent() {
   const profile = data.ratedSoldierPersonnelProfile;
   const acft = [profile?.acftStatus, profile?.acftScore ? `${profile.acftScore}` : null].filter(Boolean).join(" · ");
   const heightWeight = [profile?.heightInches ? `${profile.heightInches} in` : null, profile?.weightPounds ? `${profile.weightPounds} lb` : null].filter(Boolean).join(" / ");
+  const activeReturn = data.status === "RETURNED" ? latestReturn(data.returns) : undefined;
   const rows = [
     ["Soldier", `${s.rank} ${s.lastName}, ${s.firstName}`],
     ["MOS", s.mos],
@@ -212,6 +216,22 @@ function AdminDataContent() {
           <ProfileField label="Body composition" value={profile.bodyCompositionStatus} />
           <ProfileField label="Body comp date" value={formatDate(profile.bodyCompositionEffectiveDate)} />
         </dl>
+      </section>}
+
+      {activeReturn && <section className="mb-4 rounded-sm border border-red-200 bg-red-50 p-4" aria-label="Returned evaluation reason">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-red-950">Returned for Correction</h2>
+            <p className="mt-1 text-sm text-red-900">
+              {formatReturnReason(activeReturn.returnReason)}
+              {activeReturn.notes ? ` - ${activeReturn.notes}` : ""}
+            </p>
+          </div>
+          <span className="rounded-sm bg-white/70 px-2 py-1 text-xs font-medium text-red-700">
+            {new Date(activeReturn.returnedAt).toLocaleDateString()}
+          </span>
+        </div>
+        <p className="mt-3 text-xs text-red-700">Record the administrative response below if you are acting under an assistance grant.</p>
       </section>}
 
       <div className="rounded-sm border border-border overflow-hidden">

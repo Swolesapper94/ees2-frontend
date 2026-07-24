@@ -63,36 +63,81 @@ interface RequestOptions {
   signal?: AbortSignal;
 }
 
+const GET_CACHE_TTL_MS = 30_000;
+
+type CachedGet = {
+  expiresAt: number;
+  value: unknown;
+};
+
+const getCache = new Map<string, CachedGet>();
+const inflightGets = new Map<string, Promise<unknown>>();
+
+function cacheKey(path: string, headers: Record<string, string>): string {
+  return `${headers.Authorization ?? "anonymous"} ${path}`;
+}
+
+function clearGetCache(): void {
+  getCache.clear();
+  inflightGets.clear();
+}
+
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  const method = opts.method ?? "GET";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(await authHeader()),
   };
 
-  const res = await fetch(`${API_URL}/api${path}`, {
-    method: opts.method ?? "GET",
-    headers,
-    body: opts.body ? JSON.stringify(opts.body) : undefined,
-    signal: opts.signal,
-    cache: "no-store",
-  });
+  const key = method === "GET" && !opts.signal ? cacheKey(path, headers) : null;
+  if (key) {
+    const cached = getCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.value as T;
 
-  if (!res.ok) {
-    let details: unknown;
-    try {
-      details = await res.json();
-    } catch {
-      details = await res.text();
+    const inflight = inflightGets.get(key);
+    if (inflight) return inflight as Promise<T>;
+  }
+
+  const fetchPromise = (async () => {
+    const res = await fetch(`${API_URL}/api${path}`, {
+      method,
+      headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      signal: opts.signal,
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      let details: unknown;
+      try {
+        details = await res.json();
+      } catch {
+        details = await res.text();
+      }
+      throw new ApiError(res.status, `Request failed: ${res.status}`, details);
     }
-    throw new ApiError(res.status, `Request failed: ${res.status}`, details);
+
+    if (method !== "GET") {
+      clearGetCache();
+      void invalidateAfterMutation(path);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  })();
+
+  if (key) {
+    inflightGets.set(key, fetchPromise);
+    try {
+      const value = await fetchPromise;
+      getCache.set(key, { value, expiresAt: Date.now() + GET_CACHE_TTL_MS });
+      return value;
+    } finally {
+      inflightGets.delete(key);
+    }
   }
 
-  if ((opts.method ?? "GET") !== "GET") {
-    void invalidateAfterMutation(path);
-  }
-
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  return fetchPromise;
 }
 
 export const api = {

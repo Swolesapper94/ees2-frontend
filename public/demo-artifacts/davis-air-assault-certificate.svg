@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" role="img" aria-labelledby="title desc">
+  <title id="title">Demo Air Assault certificate</title>
+  <desc id="desc">Mock evidence fixture for SGT James Davis completing Air Assault training as an honor graduate.</desc>
+  <rect width="900" height="560" fill="#f5f5f0"/>
+  <rect x="38" y="38" width="824" height="484" fill="#ffffff" stroke="#1b2533" stroke-width="4"/>
+  <text x="450" y="108" fill="#1b2533" font-family="Georgia, serif" font-size="32" font-weight="700" text-anchor="middle">DEMO ONLY - CERTIFICATE OF COMPLETION</text>
+  <line x1="150" y1="132" x2="750" y2="132" stroke="#b45309" stroke-width="4"/>
+  <text x="450" y="205" fill="#374151" font-family="Georgia, serif" font-size="25" text-anchor="middle">This certifies that</text>
+  <text x="450" y="260" fill="#4b5320" font-family="Georgia, serif" font-size="40" font-weight="700" text-anchor="middle">SGT JAMES DAVIS</text>
+  <text x="450" y="315" fill="#374151" font-family="Georgia, serif" font-size="25" text-anchor="middle">completed Air Assault training as an honor graduate</text>
+  <text x="450" y="355" fill="#374151" font-family="Georgia, serif" font-size="22" text-anchor="middle">12 DEC 2024 - 721st Engineer Company fixture</text>
+  <text x="450" y="458" fill="#6b7280" font-family="Arial, sans-serif" font-size="18" text-anchor="middle">Mock artifact for local EES demonstration. Not an official Army record.</text>
+</svg>

@@ -7,6 +7,7 @@ import type { Evaluation, EvalStatus } from "@/types/evaluation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RankInsignia } from "@/components/ui/RankInsignia";
 import { rankAbbr } from "@/lib/utils/army-ranks";
+import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -49,13 +50,13 @@ export default function EvaluationsPage() {
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Evaluations</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Assigned Evaluations</h1>
           <p className="text-sm text-muted-foreground">
-            All NCOERs in your rating chain.
+            NCOERs and OERs you can access through your rating-chain role.
           </p>
         </div>
         <Button asChild>
-          <Link href="/evaluations/new">Start NCOER</Link>
+          <Link href="/evaluations/new">Start Evaluation</Link>
         </Button>
       </div>
 
@@ -80,9 +81,9 @@ export default function EvaluationsPage() {
 
       {!isLoading && !error && evals.length === 0 && (
         <div className="rounded-sm border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">No evaluations yet.</p>
+          <p className="text-sm text-muted-foreground">No assigned evaluations yet.</p>
           <Button asChild className="mt-4">
-            <Link href="/evaluations/new">Start your first NCOER</Link>
+            <Link href="/evaluations/new">Start an evaluation</Link>
           </Button>
         </div>
       )}
@@ -91,6 +92,7 @@ export default function EvaluationsPage() {
         <div className="space-y-3">
           {evals.map((e) => {
             const soldier = e.ratingChain?.ratedSoldier;
+            const activeReturn = e.status === "RETURNED" ? latestReturn(e.returns) : undefined;
             return (
               <Link
                 key={e.id}
@@ -110,6 +112,12 @@ export default function EvaluationsPage() {
                       {e.periodStart?.toString().slice(0, 10)} →{" "}
                       {e.periodEnd?.toString().slice(0, 10)}
                     </p>
+                    {activeReturn && (
+                      <p className="mt-1 text-xs font-medium text-red-700">
+                        Returned: {formatReturnReason(activeReturn.returnReason)}
+                        {activeReturn.notes ? ` - ${activeReturn.notes}` : ""}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <span

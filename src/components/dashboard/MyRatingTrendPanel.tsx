@@ -52,7 +52,7 @@ export function MyRatingTrendPanel() {
         My Rating History
       </h2>
       <p className="mb-3 text-xs text-muted-foreground">
-        Your own performance over time — compared only to your own past periods, never to other Soldiers.
+        Your own performance over time: compared only to your own past periods.
       </p>
       <div className="space-y-2">
         {history.map((h) => {

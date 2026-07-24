@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import type { ArtifactType, SupportForm, SupportFormEntry } from "@/types/evaluation";
 import { AlertTriangle, Award, FileText, Image as ImageIcon, Paperclip, Plus } from "lucide-react";
+import { PerformanceObservationsPanel } from "@/components/support-form/PerformanceObservationsPanel";
 
 const SECTION_LABELS: Record<string, string> = {
   CHARACTER: "Character",
@@ -37,7 +38,7 @@ interface AssignmentCandidate {
   effectiveFrom: string;
   effectiveTo: string | null;
   ratedSoldier: { id: string; firstName: string; lastName: string; rank: string; mos: string };
-  rater: { firstName: string; lastName: string; rank: string };
+  rater: { id: string; firstName: string; lastName: string; rank: string };
   seniorRater: { firstName: string; lastName: string; rank: string };
 }
 
@@ -198,6 +199,9 @@ function SupportFormContent() {
     }
   }
 
+  const selectedAssignment = form ? formOptions.find((option) => option.form.id === form.id)?.assignment : null;
+  const isAssignedRater = Boolean(currentUserId && selectedAssignment?.rater.id === currentUserId);
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
@@ -209,6 +213,7 @@ function SupportFormContent() {
         </div>
         <div className="flex items-center gap-2">
         {form && <Button variant="outline" asChild><Link href={`/support-form/goals?formId=${form.id}`}>Goals</Link></Button>}
+        {form && <Button variant="outline" asChild><Link href={`/support-form/counseling?formId=${form.id}`}>Counseling</Link></Button>}
         {candidates.length > 0 && <Button variant="outline" onClick={() => setShowStartForm(true)}><Plus className="h-4 w-4" />Start form</Button>}
         {form ? (
           <Button asChild>
@@ -251,6 +256,12 @@ function SupportFormContent() {
         <div className="rounded-sm border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">No active support form is available for your current rating assignments.</p>
           {candidates.length > 0 ? <Button className="mt-4" onClick={() => setShowStartForm(true)}><Plus className="h-4 w-4" />Start support form</Button> : <p className="mt-3 text-xs text-muted-foreground">An effective rating assignment is required before a form can be started.</p>}
+        </div>
+      )}
+
+      {!loading && !error && form && (
+        <div className="mb-4">
+          <PerformanceObservationsPanel formId={form.id} isAssignedRater={isAssignedRater} />
         </div>
       )}
 

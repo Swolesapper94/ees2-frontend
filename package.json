@@ -2,16 +2,19 @@
   "name": "ees2-frontend",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report"
+    "dev": "node scripts/with-node22.mjs next dev",
+    "build": "node scripts/with-node22.mjs next build",
+    "start": "node scripts/with-node22.mjs next start",
+    "lint": "node scripts/with-node22.mjs eslint .",
+    "typecheck": "node scripts/with-node22.mjs tsc --noEmit",
+    "test": "node scripts/with-node22.mjs playwright test",
+    "test:ui": "node scripts/with-node22.mjs playwright test --ui",
+    "test:headed": "node scripts/with-node22.mjs playwright test --headed",
+    "test:report": "node scripts/with-node22.mjs playwright show-report"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -37,22 +40,21 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
     "swr": "^2.4.2",
-    "tailwind-merge": "^3.6.0",
+    "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.4.3",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "autoprefixer": "^10.5.4",
+    "autoprefixer": "^10.4.20",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.2.10",
-    "postcss": "^8.5.20",
-    "tailwindcss": "^4.3.3",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.17",
     "typescript": "^6.0.3"
   },
   "overrides": {

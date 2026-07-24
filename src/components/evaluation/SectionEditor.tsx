@@ -7,6 +7,7 @@ import type {
   RatingFourLevel,
   BulletSource,
   AIBulletSuggestion,
+  PerformanceObservation,
   SectionKey,
   SupportFormEntry,
 } from "@/types/evaluation";
@@ -16,6 +17,7 @@ import { BulletEditor } from "./BulletEditor";
 import { BulletCard } from "./BulletCard";
 import { AIBulletPanel } from "./AIBulletPanel";
 import { SoldierAccomplishmentsPanel } from "./SoldierAccomplishmentsPanel";
+import { RaterObservationsPanel } from "./RaterObservationsPanel";
 import { BulletSkeleton } from "./BulletSkeleton";
 import { UploadedSupportFormViewer } from "./UploadedSupportFormViewer";
 import { api } from "@/lib/api/client";
@@ -45,6 +47,10 @@ export interface SectionEditorProps {
   soldierInfo?: { rank: string; mos: string; dutyTitle: string; formType: string };
   /** Soldier-logged support form entries (guided flow) — used by the Soldier Accomplishments widget */
   supportFormEntries?: SupportFormEntry[];
+  /** Rater-owned observations supplied by the evaluation's linked support form. */
+  supportFormObservations?: PerformanceObservation[];
+  /** Server-derived relationship capability; never infer this from a global role. */
+  canUseRaterEvidence?: boolean;
   /** The original uploaded support form can be reviewed alongside AI suggestions. */
   uploadedSupportFormFileType?: string;
 }
@@ -58,6 +64,8 @@ export function SectionEditor({
   ratingStyle = "four-level",
   soldierInfo,
   supportFormEntries = [],
+  supportFormObservations = [],
+  canUseRaterEvidence = false,
   uploadedSupportFormFileType,
 }: SectionEditorProps) {
   const contentLabel = soldierInfo?.formType.startsWith("OER") ? "comment" : "bullet";
@@ -92,6 +100,7 @@ export function SectionEditor({
   const [localSuggestions, setLocalSuggestions] = useState<AIBulletSuggestion[]>(
     aiBulletSuggestions,
   );
+  const [manualEvidenceReferences, setManualEvidenceReferences] = useState<Array<{ kind: "SUPPORT_FORM_ENTRY" | "PERFORMANCE_OBSERVATION"; id: string }>>([]);
 
   useEffect(() => {
     setLocalSuggestions(aiBulletSuggestions);
@@ -138,9 +147,53 @@ export function SectionEditor({
       ...bulletSources,
       [String(newBullets.length - 1)]: source,
     };
+    const evidenceSnapshots = manualEvidenceReferences.map((reference) => {
+      if (reference.kind === "SUPPORT_FORM_ENTRY") {
+        const entry = supportFormEntries.find((item) => item.id === reference.id);
+        return entry ? {
+          entryId: entry.id,
+          sourceType: "SUPPORT_FORM_ENTRY" as const,
+          sourceId: entry.id,
+          sourceLabel: "Soldier accomplishment",
+          occurredAt: entry.entryDate,
+          rawText: entry.rawText,
+          artifactCaptions: entry.artifacts.filter((artifact) => artifact.aiCaptionStatus === "COMPLETE" && artifact.aiCaption).map((artifact) => artifact.aiCaption as string),
+        } : null;
+      }
+      const observation = supportFormObservations.find((item) => item.id === reference.id);
+      return observation ? {
+        entryId: observation.id,
+        sourceType: "PERFORMANCE_OBSERVATION" as const,
+        sourceId: observation.id,
+        sourceLabel: observation.observer ? `${observation.observer.rank} ${observation.observer.lastName} observation` : "Rater observation",
+        occurredAt: observation.occurredAt,
+        rawText: observation.factualNote,
+        artifactCaptions: [],
+        goal: observation.goal ? { id: observation.goal.id, title: observation.goal.title, description: observation.goal.description } : null,
+        counselingState: observation.releaseState,
+        discussedAt: observation.discussedAt,
+      } : null;
+    }).filter((snapshot): snapshot is NonNullable<typeof snapshot> => snapshot !== null);
+    const newProvenance = evidenceSnapshots.length > 0 ? {
+      ...(bulletProvenance ?? {}),
+      [String(newBullets.length - 1)]: {
+        suggestionId: "manual",
+        sourceEntryIds: manualEvidenceReferences.filter((reference) => reference.kind === "SUPPORT_FORM_ENTRY").map((reference) => reference.id),
+        evidenceReferences: manualEvidenceReferences,
+        sourceSnapshot: evidenceSnapshots,
+      },
+    } : bulletProvenance;
     setFinalBullets(newBullets);
     setBulletSources(newSources);
-    await save({ finalBullets: newBullets, bulletSources: newSources });
+    setBulletProvenance(newProvenance ?? null);
+    setManualEvidenceReferences([]);
+    await save({ finalBullets: newBullets, bulletSources: newSources, bulletProvenance: newProvenance ?? null });
+  }
+
+  function toggleManualEvidence(reference: { kind: "SUPPORT_FORM_ENTRY" | "PERFORMANCE_OBSERVATION"; id: string }) {
+    setManualEvidenceReferences((current) => current.some((item) => item.kind === reference.kind && item.id === reference.id)
+      ? current.filter((item) => item.kind !== reference.kind || item.id !== reference.id)
+      : [...current, reference]);
   }
 
   async function handleEditBullet(index: number, text: string) {
@@ -248,7 +301,7 @@ export function SectionEditor({
       )}
 
       {/* AI Panel Toggle */}
-      {isPartIVSection && (
+      {canUseRaterEvidence && isPartIVSection && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-border bg-muted/30 px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">AI Suggestions</span>
@@ -286,7 +339,7 @@ export function SectionEditor({
       )}
 
       {/* Main content: split when AI open, single column otherwise */}
-      <div className={cn(aiPanelOpen && isPartIVSection ? "grid gap-6 lg:grid-cols-2" : "")}>
+      <div className={cn(aiPanelOpen && canUseRaterEvidence && isPartIVSection ? "grid gap-6 lg:grid-cols-2" : "")}>
         {/* Left column: bullets */}
         <div className="space-y-4">
           <div>
@@ -328,6 +381,23 @@ export function SectionEditor({
                 Add {contentLabel === "comment" ? "Comment" : "Bullet"} Manually
               </h3>
               <BulletEditor onSave={(t) => handleAddBullet(t, "HUMAN")} />
+              {canUseRaterEvidence && (
+                <details className="mt-2 rounded border border-border p-2 text-xs">
+                  <summary className="cursor-pointer font-medium text-muted-foreground">Attach optional evidence ({manualEvidenceReferences.length})</summary>
+                  <div className="mt-2 space-y-2">
+                    {supportFormEntries.filter((entry) => entry.section === section.section && entry.entryType === "ACCOMPLISHMENT").map((entry) => {
+                      const reference = { kind: "SUPPORT_FORM_ENTRY" as const, id: entry.id };
+                      const selected = manualEvidenceReferences.some((item) => item.kind === reference.kind && item.id === reference.id);
+                      return <label key={entry.id} className="flex gap-2"><input type="checkbox" checked={selected} onChange={() => toggleManualEvidence(reference)} /><span>{entry.rawText}</span></label>;
+                    })}
+                    {supportFormObservations.filter((observation) => observation.sectionKey === section.section).map((observation) => {
+                      const reference = { kind: "PERFORMANCE_OBSERVATION" as const, id: observation.id };
+                      const selected = manualEvidenceReferences.some((item) => item.kind === reference.kind && item.id === reference.id);
+                      return <label key={observation.id} className="flex gap-2"><input type="checkbox" checked={selected} onChange={() => toggleManualEvidence(reference)} /><span>Rater observation: {observation.factualNote}</span></label>;
+                    })}
+                  </div>
+                </details>
+              )}
               <p className="mt-1 text-xs text-muted-foreground">
                 {contentLabel === "comment"
                   ? `Keep the narrative factual, concise, and within ${BULLET_MAX_CHARS} characters.`
@@ -338,7 +408,7 @@ export function SectionEditor({
         </div>
 
         {/* Right column: AI suggestions */}
-        {aiPanelOpen && isPartIVSection && (
+        {aiPanelOpen && canUseRaterEvidence && isPartIVSection && (
           <div className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
               AI Performance Suggestions
@@ -365,6 +435,22 @@ export function SectionEditor({
                 const merged = [
                   ...localSuggestions.filter(
                     (s) => !newSuggestions.some((n) => n.id === s.id),
+                  ),
+                  ...newSuggestions,
+                ];
+                handleSuggestionsChange(merged);
+                setAiPanelOpen(true);
+              }}
+            />
+
+            <RaterObservationsPanel
+              evalId={evalId}
+              sectionKey={section.section as SectionKey}
+              observations={supportFormObservations}
+              onSuggestions={(newSuggestions) => {
+                const merged = [
+                  ...localSuggestions.filter(
+                    (suggestion) => !newSuggestions.some((next) => next.id === suggestion.id),
                   ),
                   ...newSuggestions,
                 ];

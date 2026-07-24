@@ -7,6 +7,7 @@ import type { Evaluation, EvalStatus } from "@/types/evaluation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RankInsignia } from "@/components/ui/RankInsignia";
 import { rankAbbr } from "@/lib/utils/army-ranks";
+import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -152,13 +153,13 @@ export default function MySoldiersPage() {
         <div className="space-y-3">
           {evals.map((e) => {
             const soldier = e.ratingChain?.ratedSoldier;
+            const activeReturn = e.status === "RETURNED" ? latestReturn(e.returns) : undefined;
             return (
-              <Link
+              <div
                 key={e.id}
-                href={`/evaluations/${e.id}/admin`}
                 className="flex items-center justify-between rounded-sm border border-border bg-card p-4 hover:bg-accent transition-colors"
               >
-                <div className="flex items-center gap-3">
+                <Link href={`/evaluations/${e.id}/admin`} className="min-w-0 flex flex-1 items-center gap-3">
                   {soldier && <RankInsignia rank={soldier.rank} size="md" />}
                   <div>
                     <p className="font-medium">
@@ -171,14 +172,19 @@ export default function MySoldiersPage() {
                       {e.periodStart?.toString().slice(0, 10)} →{" "}
                       {e.periodEnd?.toString().slice(0, 10)}
                     </p>
+                    {activeReturn && (
+                      <p className="mt-1 text-xs font-medium text-red-700">
+                        Returned: {formatReturnReason(activeReturn.returnReason)}
+                        {activeReturn.notes ? ` - ${activeReturn.notes}` : ""}
+                      </p>
+                    )}
                   </div>
+                </Link>
+                <div className="ml-3 flex shrink-0 items-center gap-2">
+                  <span className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}>{STATUS_LABELS[e.status]}</span>
+                  {e.supportFormId && <Button variant="outline" size="sm" asChild><Link href={`/support-form?formId=${e.supportFormId}`}>Record observation</Link></Button>}
                 </div>
-                <span
-                  className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}
-                >
-                  {STATUS_LABELS[e.status]}
-                </span>
-              </Link>
+              </div>
             );
           })}
         </div>

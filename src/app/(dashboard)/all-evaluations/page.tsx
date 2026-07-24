@@ -9,6 +9,7 @@ import type { Evaluation, EvalStatus } from "@/types/evaluation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RankInsignia } from "@/components/ui/RankInsignia";
 import { rankAbbr } from "@/lib/utils/army-ranks";
+import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -169,6 +170,7 @@ export default function AllEvaluationsPage() {
           {filtered.map((e) => {
             const soldier = e.ratingChain?.ratedSoldier;
             const rater = e.ratingChain?.rater;
+            const activeReturn = e.status === "RETURNED" ? latestReturn(e.returns) : undefined;
             const raterName = rater
               ? `${rankAbbr(rater.rank)} ${rater.lastName}`
               : "—";
@@ -192,6 +194,12 @@ export default function AllEvaluationsPage() {
                       {e.periodStart?.toString().slice(0, 10)} →{" "}
                       {e.periodEnd?.toString().slice(0, 10)}
                     </p>
+                    {activeReturn && (
+                      <p className="mt-1 text-xs font-medium text-red-700">
+                        Returned: {formatReturnReason(activeReturn.returnReason)}
+                        {activeReturn.notes ? ` - ${activeReturn.notes}` : ""}
+                      </p>
+                    )}
                   </div>
                 </div>
                 </Link>

@@ -68,7 +68,7 @@ export function Sidebar({ hasSoldiers = true, isCommander = false, canViewAdmin 
       </div>
       <nav className="flex flex-col gap-0.5 px-2">
         <NavItem href="/dashboard" label="Dashboard" icon={LayoutDashboard} />
-        <NavItem href="/evaluations" label="My Eval" icon={Star} />
+        <NavItem href="/evaluations" label="Assigned Evals" icon={Star} />
         {hasSoldiers && (
           <NavItem href="/my-soldiers" label="My Soldiers" icon={Users} />
         )}

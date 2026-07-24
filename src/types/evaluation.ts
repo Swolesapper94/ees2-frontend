@@ -67,6 +67,22 @@ export type UserRole =
 
 export type BulletSource = "HUMAN" | "AI_MODIFIED" | "AI_UNMODIFIED";
 
+export type ReturnReason =
+  | "ADMIN_ERROR"
+  | "PROHIBITED_LANGUAGE"
+  | "MISSING_SIGNATURE"
+  | "RATING_PERIOD_ERROR"
+  | "OTHER";
+
+export interface EvaluationReturn {
+  id: string;
+  evaluationId: string;
+  returnReason: ReturnReason;
+  returnedAt: string;
+  notes: string | null;
+  resolvedAt: string | null;
+}
+
 // ── AI Pipeline types ────────────────────────────────────────────────────────
 
 export type SupportFormUploadStatus =
@@ -85,8 +101,15 @@ export type AIBulletConfidence = "HIGH" | "MEDIUM" | "LOW";
 
 export interface BulletSourceSnapshotEntry {
   entryId: string;
+  sourceType?: "SUPPORT_FORM_ENTRY" | "PERFORMANCE_OBSERVATION" | "AI_EXTRACTED_ENTRY" | "RATER_DESCRIPTION";
+  sourceId?: string;
+  sourceLabel?: string;
+  occurredAt?: string;
   rawText: string;
   artifactCaptions: string[];
+  goal?: { id: string; title: string; description: string } | null;
+  counselingState?: ObservationReleaseState;
+  discussedAt?: string | null;
   sourceDocumentId?: string | null;
   sourceDocumentName?: string | null;
   sourcePage?: number | null;
@@ -116,6 +139,7 @@ export interface AIBulletSuggestion {
   reviewedById: string | null;
   reviewedAt: string | null;
   sourceEntryIds: string[];
+  evidenceReferences?: Array<{ kind: "SUPPORT_FORM_ENTRY" | "PERFORMANCE_OBSERVATION"; id: string }> | null;
   sourceSnapshot: BulletSourceSnapshotEntry[] | null;
   unsupportedClaims: UnsupportedClaim[] | null;
   createdAt: string;
@@ -165,6 +189,30 @@ export type EntryConfirmationStatus =
   | "NEEDS_CLARIFICATION"
   | "NOT_USED";
 
+export type ObservationFeedbackType = "POSITIVE" | "DEVELOPMENTAL" | "NEUTRAL";
+export type ObservationReleaseState = "PRIVATE_TO_RATER" | "RELEASED_IN_COUNSELING";
+
+export interface PerformanceObservation {
+  id: string;
+  supportFormId: string;
+  ratedSoldierId: string;
+  observerId: string;
+  goalId: string | null;
+  sectionKey: SectionKey;
+  feedbackType: ObservationFeedbackType;
+  factualNote: string;
+  tags: string[];
+  occurredAt: string;
+  releaseState: ObservationReleaseState;
+  discussedAt: string | null;
+  discussedInCounselingSessionId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  observer?: { id: string; firstName: string; lastName: string; rank: string };
+  goal?: { id: string; title: string; description: string; approvalStatus: string } | null;
+  discussedInCounselingSession?: { id: string; type: string; sessionDate: string } | null;
+}
+
 export interface SupportFormEntryArtifact {
   id: string;
   entryId: string;
@@ -178,6 +226,15 @@ export interface SupportFormEntryArtifact {
   flagNote: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SupportFormEntryGoalLink {
+  goal: {
+    id: string;
+    title: string;
+    description: string;
+    approvalStatus: "DRAFT" | "PENDING_RATER_REVIEW" | "APPROVED" | "NEEDS_REVISION";
+  };
 }
 
 export interface SupportFormEntry {
@@ -202,6 +259,7 @@ export interface SupportFormEntry {
   confirmedAt: string | null;
   clarificationNote: string | null;
   artifacts: SupportFormEntryArtifact[];
+  goalLinks?: SupportFormEntryGoalLink[];
   createdAt: string;
   updatedAt: string;
 }
@@ -224,11 +282,13 @@ export interface SupportForm {
   isActive: boolean;
   completedAt: string | null;
   entries: SupportFormEntry[];
+  observations?: PerformanceObservation[];
 }
 
 export interface BulletProvenanceEntry {
   suggestionId: string;
   sourceEntryIds: string[];
+  evidenceReferences?: Array<{ kind: "SUPPORT_FORM_ENTRY" | "PERFORMANCE_OBSERVATION"; id: string }> | null;
   sourceSnapshot: BulletSourceSnapshotEntry[] | null;
 }
 
@@ -255,6 +315,8 @@ export interface Evaluation {
   sections?: EvalSection[];
   supportFormId?: string | null;
   supportForm?: SupportForm | null;
+  returns?: EvaluationReturn[];
+  canUseRaterEvidence?: boolean;
 }
 
 export interface ConsistencyFlag {

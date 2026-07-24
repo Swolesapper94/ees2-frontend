@@ -18,6 +18,12 @@ const SIZE_MAP = {
   lg: "h-12 w-12 text-base",
 } as const;
 
+const IMAGE_SIZE_MAP = {
+  sm: 24,
+  md: 32,
+  lg: 48,
+} as const;
+
 /**
  * User avatar — displays picture if available, falls back to initials.
  * For MS365 integration: pass `src={userPhotoUrl}` from MS Graph endpoint
@@ -49,8 +55,9 @@ export function UserAvatar({
         <Image
           src={src}
           alt={alt}
-          fill
-          className="object-cover"
+          width={IMAGE_SIZE_MAP[size]}
+          height={IMAGE_SIZE_MAP[size]}
+          className="h-full w-full object-cover"
           sizes="(max-width: 640px) 32px, 48px"
           onError={() => setFailed(true)}
         />
