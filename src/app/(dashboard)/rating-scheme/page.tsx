@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, api } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
-import { GitBranch, Table2 } from "lucide-react";
+import { GitBranch, Table2, X } from "lucide-react";
 import { RatingRelationshipMap } from "@/components/rating-scheme/RatingRelationshipMap";
 
 type Official = { id: string; firstName: string; lastName: string; rank: string };
@@ -14,7 +14,7 @@ type Assignment = {
 };
 type PopulationPerson = Official & { mos: string; category: string | null };
 type Capabilities = { createDraft: boolean; editDraft: boolean; submit: boolean; approve: boolean; publish: boolean; manageDelegates: boolean; viewAudit: boolean };
-type Scheme = { id: string; version: number; status: string; effectiveFrom: string; approvedAt: string | null; publishedAt: string | null; unit: { id: string; name: string } | null; assignments: Assignment[]; coverage: { eligiblePersonnel: PopulationPerson[]; unassignedPersonnel: PopulationPerson[] }; capabilities: Capabilities };
+type Scheme = { id: string; version: number; status: string; effectiveFrom: string; approvedAt: string | null; publishedAt: string | null; unit: { id: string; name: string } | null; assignments: Assignment[]; coverage: { eligiblePersonnel: PopulationPerson[]; unassignedPersonnel: PopulationPerson[] }; viewScope: "FORMATION" | "OWN_RATING_CHAIN"; capabilities: Capabilities };
 type Workspace = { scheme: Scheme | null; capabilities: { createDraft: boolean } };
 type Candidate = Official & { ratingEligible: boolean };
 type UnitScope = { id: string; name: string };
@@ -88,9 +88,10 @@ export default function RatingSchemePage() {
   if (!scheme) return <NoPublishedScheme canCreate={workspace.capabilities.createDraft} effectiveFrom={effectiveFrom} setEffectiveFrom={setEffectiveFrom} busy={busy} error={error} onCreate={createDraft} unitScopes={unitScopes} selectedUnitId={selectedUnitId} onSelectUnit={(unitId) => { setSelectedUnitId(unitId); void loadWorkspace(unitId); }} />;
 
   const isPublished = scheme.status === "PUBLISHED" || scheme.status === "SUPERSEDED";
+  const isFormationView = scheme.viewScope === "FORMATION";
   return <div className="p-6 space-y-6">
     <header className="flex flex-wrap items-start justify-between gap-4">
-      <div><h1 className="text-2xl font-bold tracking-tight">Rating Scheme</h1><p className="mt-0.5 text-sm text-muted-foreground">View the official rating relationships for your immediate unit and manage proposed changes.</p><p className="mt-2 text-sm font-medium">{scheme.unit?.name ?? "Immediate unit"} <span className="text-muted-foreground">/</span> Version {scheme.version}</p></div>
+      <div><h1 className="text-2xl font-bold tracking-tight">{isFormationView ? "Rating Scheme" : "My Rating Chain"}</h1><p className="mt-0.5 text-sm text-muted-foreground">{isFormationView ? "View the official rating relationships for your immediate unit and manage proposed changes." : "View the official rating relationships that include you."}</p><p className="mt-2 text-sm font-medium">{scheme.unit?.name ?? "Immediate unit"} <span className="text-muted-foreground">/</span> Version {scheme.version}</p></div>
       <div className="flex flex-wrap items-end gap-2">
         {unitScopes.length > 1 && <label className="text-xs text-muted-foreground">Immediate unit<select value={selectedUnitId || scheme.unit?.id || ""} onChange={(event) => { setSelectedUnitId(event.target.value); void loadWorkspace(event.target.value); }} className="mt-1 block h-9 rounded-sm border border-input bg-background px-2 text-sm text-foreground">{unitScopes.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label>}
         {scheme.capabilities.createDraft && isPublished && <><label className="text-xs text-muted-foreground">Next effective date<input aria-label="Next scheme effective date" type="date" value={effectiveFrom} min={dateValue(new Date(Date.now() + 86_400_000))} onChange={(event) => setEffectiveFrom(event.target.value)} className="mt-1 block h-9 rounded-sm border border-input bg-background px-2 text-sm text-foreground" /></label><Button variant="outline" disabled={busy} onClick={copyCurrent}>Copy current scheme</Button></>}
@@ -101,7 +102,7 @@ export default function RatingSchemePage() {
       </div>
     </header>
     {error && <div className="border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>}
-    <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
+    {isFormationView && <section className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
       <Metric label="Rated personnel" value={scheme.coverage.eligiblePersonnel.length} />
       <Metric label="Complete assignments" value={scheme.assignments.filter((assignment) => assignment.rater && assignment.seniorRater).length} />
       <Metric label="Missing assignments" value={scheme.coverage.unassignedPersonnel.length} />
@@ -109,13 +110,13 @@ export default function RatingSchemePage() {
       <Metric label="Effective" value={formatDate(scheme.effectiveFrom)} />
       <Metric label="Approved" value={formatDate(scheme.approvedAt)} />
       <Metric label="Published" value={formatDate(scheme.publishedAt)} />
-    </section>
+    </section>}
     <div className="flex items-center justify-between border-b border-border">
       <div className="flex" role="tablist" aria-label="Rating scheme view">
-        <button type="button" role="tab" aria-selected={view === "map"} onClick={() => setView("map")} className={view === "map" ? "flex items-center gap-2 border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground" : "flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground"}><GitBranch className="h-4 w-4" />Relationship map</button>
+        <button type="button" role="tab" aria-selected={view === "map"} onClick={() => setView("map")} className={view === "map" ? "flex items-center gap-2 border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground" : "flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground"}><GitBranch className="h-4 w-4" />{isFormationView ? "Relationship map" : "My relationships"}</button>
         <button type="button" role="tab" aria-selected={view === "table"} onClick={() => setView("table")} className={view === "table" ? "flex items-center gap-2 border-b-2 border-primary px-3 py-2 text-sm font-medium text-foreground" : "flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground"}><Table2 className="h-4 w-4" />Table</button>
       </div>
-      <p className="pr-3 text-xs text-muted-foreground">{view === "map" ? "Click a rated Soldier to inspect the rating relationship." : "Use the table for complete assignment detail."}</p>
+      <p className="pr-3 text-xs text-muted-foreground">{view === "map" ? "Select a rated Soldier to open relationship details." : "Use the table for complete assignment detail."}</p>
     </div>
     {view === "map" ? <RatingRelationshipMap assignments={scheme.assignments} unassignedPersonnel={scheme.coverage.unassignedPersonnel} onSelect={setSelected} /> : <section className="overflow-x-auto border border-border bg-card">
       <table className="min-w-full text-left text-sm"><thead className="border-b border-border bg-muted/30 text-xs uppercase text-muted-foreground"><tr><th className="px-4 py-3">Rated Soldier</th><th className="px-4 py-3">Unit / Section</th><th className="px-4 py-3">Rater</th><th className="px-4 py-3">Intermediate</th><th className="px-4 py-3">Senior Rater</th><th className="px-4 py-3">Effective dates</th><th className="px-4 py-3">Status</th></tr></thead><tbody>{scheme.assignments.map((assignment) => <tr key={assignment.id} onClick={() => setSelected(assignment)} className="cursor-pointer border-b border-border hover:bg-muted/30"><td className="px-4 py-3 font-medium">{fullName(assignment.ratedSoldier)}</td><td className="px-4 py-3 text-muted-foreground">{assignment.unit?.name ?? scheme.unit?.name ?? "Immediate unit"}</td><td className="px-4 py-3">{fullName(assignment.rater)}</td><td className="px-4 py-3">{assignment.intermediateRater ? fullName(assignment.intermediateRater) : "-"}</td><td className="px-4 py-3">{fullName(assignment.seniorRater)}</td><td className="px-4 py-3 text-muted-foreground">{formatDate(assignment.effectiveFrom)} - {assignment.effectiveTo ? formatDate(assignment.effectiveTo) : "Open"}</td><td className="px-4 py-3"><span className={`rounded-sm px-2 py-1 text-xs font-medium ${statusClass[scheme.status] ?? "bg-gray-100 text-gray-700"}`}>{scheme.status.replaceAll("_", " ")}</span></td></tr>)}{scheme.coverage.unassignedPersonnel.map((person) => <tr key={person.id} className="border-b border-border bg-amber-50/50 last:border-0"><td className="px-4 py-3 font-medium">{fullName(person)}</td><td className="px-4 py-3 text-muted-foreground">{scheme.unit?.name ?? "Immediate unit"}</td><td className="px-4 py-3 text-muted-foreground">Unassigned</td><td className="px-4 py-3 text-muted-foreground">-</td><td className="px-4 py-3 text-muted-foreground">Unassigned</td><td className="px-4 py-3 text-muted-foreground">-</td><td className="px-4 py-3"><span className="rounded-sm bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">ASSIGNMENT MISSING</span></td></tr>)}</tbody></table>
@@ -135,7 +136,7 @@ function messageFor(error: unknown, fallback: string) { return error instanceof 
 
 function RelationshipDrawer({ assignment, scheme, onClose }: { assignment: Assignment; scheme: Scheme; onClose: () => void }) {
   const people: Array<[string, Official | null]> = [["Rated Soldier", assignment.ratedSoldier], ["Rater", assignment.rater], ["Intermediate Rater", assignment.intermediateRater], ["Senior Rater", assignment.seniorRater], ["Supplementary Reviewer", assignment.supplementaryReviewer]];
-  return <div className="fixed inset-0 z-50 flex justify-end bg-black/30" role="dialog" aria-modal="true"><div className="h-full w-full max-w-md overflow-y-auto bg-background p-6 shadow-xl"><div className="flex justify-between"><h2 className="text-lg font-bold">Rating Relationship</h2><Button variant="ghost" size="sm" onClick={onClose}>Close</Button></div><div className="mt-6 space-y-4">{people.map(([label, person]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><p className="font-medium">{person ? fullName(person) : "Not assigned"}</p></div>)}<div><p className="text-xs text-muted-foreground">Effective dates</p><p className="font-medium">{formatDate(assignment.effectiveFrom)} - {assignment.effectiveTo ? formatDate(assignment.effectiveTo) : "Open"}</p></div><div><p className="text-xs text-muted-foreground">Scheme record</p><p className="font-medium">Version {scheme.version}; approved {formatDate(scheme.approvedAt)}; published {formatDate(scheme.publishedAt)}</p></div></div></div></div>;
+  return <div className="fixed inset-0 z-50 flex justify-end bg-black/30" role="dialog" aria-modal="true" aria-labelledby="relationship-detail-title"><div className="h-full w-full max-w-md overflow-y-auto bg-background p-6 shadow-xl"><div className="flex items-start justify-between gap-4"><div><h2 id="relationship-detail-title" className="text-lg font-bold">Relationship details</h2><p className="mt-1 text-sm text-muted-foreground">{fullName(assignment.ratedSoldier)}</p></div><Button variant="ghost" size="icon" onClick={onClose} aria-label="Close relationship details" title="Close relationship details"><X className="h-4 w-4" /></Button></div><dl className="mt-6 divide-y divide-border border-y border-border">{people.map(([label, person]) => <div key={label} className="py-3"><dt className="text-xs font-medium text-muted-foreground">{label}</dt><dd className="mt-1 font-medium">{person ? fullName(person) : "Not assigned"}</dd></div>)}<div className="py-3"><dt className="text-xs font-medium text-muted-foreground">Effective dates</dt><dd className="mt-1 font-medium">{formatDate(assignment.effectiveFrom)} - {assignment.effectiveTo ? formatDate(assignment.effectiveTo) : "Open"}</dd></div><div className="py-3"><dt className="text-xs font-medium text-muted-foreground">Scheme record</dt><dd className="mt-1 font-medium">Version {scheme.version}; approved {formatDate(scheme.approvedAt)}; published {formatDate(scheme.publishedAt)}</dd></div></dl></div></div>;
 }
 
 function AssignmentBuilder({ candidates, scheme, busy, onCancel, onSave }: { candidates: Candidate[]; scheme: Scheme; busy: boolean; onCancel: () => void; onSave: (body: Record<string, unknown>) => Promise<void> }) {

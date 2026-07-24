@@ -32,36 +32,21 @@ export interface DevProfile {
   dutyTitle: string;
   unit: string;
   roles: DevRole[];
+  /**
+   * Which picker section this persona belongs to. "core" is the one PM-demo
+   * route (see docs/admin/16-pm-demo-route.md): Davis -> Johnson -> Williams.
+   * "oer" is the optional officer boundary segment. "fixtures" are personas
+   * that exist only for other features' test coverage (supplementary review,
+   * rating-scheme administration, identity/access admin, Access and
+   * Assistance) and are not part of the demo narrative.
+   */
+  group: "core" | "oer" | "fixtures";
 }
 
 export const DEV_PROFILES: DevProfile[] = [
   {
-    label: "CPT Smith — Company Commander",
-    hint: "Rates LTs + NCOs · Has OER",
-    email: "peter.smith@army.mil",
-    rank: "CPT",
-    firstName: "Peter",
-    lastName: "Smith",
-    mos: "11A",
-    dutyTitle: "Company Commander",
-    unit: "C Co, 1-505 PIR, 82nd ABN",
-    roles: ["SOLDIER", "RATER", "SENIOR_RATER", "COMMANDER"],
-  },
-  {
-    label: "SSG Johnson — Squad Leader",
-    hint: "Rates SGTs · Has NCOER (9-2)",
-    email: "marcus.johnson@army.mil",
-    rank: "SSG",
-    firstName: "Marcus",
-    lastName: "Johnson",
-    mos: "11B",
-    dutyTitle: "Squad Leader",
-    unit: "B Co, 1-505 PIR, 82nd ABN",
-    roles: ["SOLDIER", "RATER"],
-  },
-  {
     label: "SGT Davis — Team Leader",
-    hint: "Rated only · Has NCOER (9-1)",
+    hint: "Rated only · Has NCOER (9-1) · Start here for the PM demo",
     email: "james.davis@army.mil",
     rank: "SGT",
     firstName: "James",
@@ -70,22 +55,24 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Team Leader",
     unit: "B Co, 1-505 PIR, 82nd ABN",
     roles: ["SOLDIER"],
+    group: "core",
   },
   {
-    label: "1LT Torres — PLT Leader",
-    hint: "Rater = 1LT, triggers supplementary review",
-    email: "maria.torres@army.mil",
-    rank: "FIRST_LT",
-    firstName: "Maria",
-    lastName: "Torres",
-    mos: "11A",
-    dutyTitle: "Platoon Leader",
-    unit: "A Co, 1-505 PIR, 82nd ABN",
+    label: "SSG Johnson — Squad Leader",
+    hint: "Rates SGTs · Has NCOER (9-2) · Demo step 2, Davis's rater",
+    email: "marcus.johnson@army.mil",
+    rank: "SSG",
+    firstName: "Marcus",
+    lastName: "Johnson",
+    mos: "11B",
+    dutyTitle: "Squad Leader",
+    unit: "B Co, 1-505 PIR, 82nd ABN",
     roles: ["SOLDIER", "RATER"],
+    group: "core",
   },
   {
     label: "SFC Williams — Platoon Sergeant",
-    hint: "Rater + SR · Has NCOER (9-2)",
+    hint: "Rater + SR · Has NCOER (9-2) · Demo step 3, Davis's senior rater",
     email: "robert.williams@army.mil",
     rank: "SFC",
     firstName: "Robert",
@@ -94,10 +81,37 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Platoon Sergeant",
     unit: "B Co, 1-505 PIR, 82nd ABN",
     roles: ["SOLDIER", "RATER", "SENIOR_RATER"],
+    group: "core",
+  },
+  {
+    label: "1LT Torres — PLT Leader",
+    hint: "Rater = 1LT, triggers supplementary review · Optional OER segment",
+    email: "maria.torres@army.mil",
+    rank: "FIRST_LT",
+    firstName: "Maria",
+    lastName: "Torres",
+    mos: "11A",
+    dutyTitle: "Platoon Leader",
+    unit: "A Co, 1-505 PIR, 82nd ABN",
+    roles: ["SOLDIER", "RATER"],
+    group: "oer",
+  },
+  {
+    label: "CPT Smith — Company Commander",
+    hint: "Rates LTs + NCOs · Has OER · Optional OER segment (Torres's rater)",
+    email: "peter.smith@army.mil",
+    rank: "CPT",
+    firstName: "Peter",
+    lastName: "Smith",
+    mos: "11A",
+    dutyTitle: "Company Commander",
+    unit: "C Co, 1-505 PIR, 82nd ABN",
+    roles: ["SOLDIER", "RATER", "SENIOR_RATER", "COMMANDER"],
+    group: "oer",
   },
   {
     label: "MAJ Lee — Battalion Executive Officer",
-    hint: "Senior rater for compliant replacement assignments",
+    hint: "Senior rater for compliant replacement assignments · Optional OER segment (Torres's SR)",
     email: "jordan.lee@army.mil",
     rank: "MAJ",
     firstName: "Jordan",
@@ -106,10 +120,11 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Battalion Executive Officer",
     unit: "1-505 PIR, 82nd ABN",
     roles: ["SOLDIER", "SENIOR_RATER"],
+    group: "oer",
   },
   {
     label: "LTC Reed — Battalion Commander",
-    hint: "Approves and publishes immediate-unit rating schemes",
+    hint: "Approves/publishes rating schemes; Davis's supplementary reviewer in FLOWS test cast",
     email: "morgan.reed@army.mil",
     rank: "LTC",
     firstName: "Morgan",
@@ -118,6 +133,7 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Battalion Commander",
     unit: "1-505 PIR, 82nd ABN",
     roles: ["SOLDIER", "REVIEWER", "COMMANDER"],
+    group: "fixtures",
   },
   {
     label: "CPT Quinn — Servicing Administrator",
@@ -130,6 +146,7 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Battalion S-1",
     unit: "1-505 PIR, 82nd ABN",
     roles: ["SOLDIER", "ADMIN"],
+    group: "fixtures",
   },
   {
     label: "SGT Rivera — Evidence Assistant",
@@ -142,6 +159,7 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Human Resources Specialist",
     unit: "1-505 PIR, 82nd ABN",
     roles: ["SOLDIER"],
+    group: "fixtures",
   },
   {
     label: "SFC Morgan — Records Assistant",
@@ -154,6 +172,7 @@ export const DEV_PROFILES: DevProfile[] = [
     dutyTitle: "Human Resources Specialist",
     unit: "1-505 PIR, 82nd ABN",
     roles: ["SOLDIER"],
+    group: "fixtures",
   },
 ];
 

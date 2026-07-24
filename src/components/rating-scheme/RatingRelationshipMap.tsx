@@ -47,6 +47,10 @@ export function RatingRelationshipMap({ assignments, unassignedPersonnel, onSele
     branches.set(assignment.seniorRater.id, branch);
   }
 
+  if (assignments.length === 0) {
+    return <section className="border border-border bg-card px-4 py-10 text-center" aria-label="Rating relationship map"><p className="font-medium">No active rating relationships</p><p className="mt-1 text-sm text-muted-foreground">You are not currently listed as a rated Soldier, rater, senior rater, intermediate rater, or supplementary reviewer in this unit&apos;s published scheme.</p></section>;
+  }
+
   return (
     <section className="space-y-5" aria-label="Rating relationship map">
       <div className="grid gap-4 xl:grid-cols-2">

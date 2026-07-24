@@ -33,6 +33,31 @@ const PART_IV_SECTIONS: SectionKey[] = [
   "ACHIEVES",
 ];
 
+/**
+ * A new AI generation run for a section (from scratch, from selected
+ * accomplishments, or from selected observations — they all populate the
+ * same "AI Performance Suggestions" round) supersedes that section's prior
+ * undecided or rejected candidates instead of piling up beside them.
+ * Accepted/edited suggestions are always kept — they already became final
+ * bullets and carry a permanent provenance record. Suggestions tied to a
+ * whole-document upload (uploadId set) are a separate, intentionally
+ * preserved history and are never touched here.
+ */
+function replaceGeneratedSuggestions(
+  current: AIBulletSuggestion[],
+  fresh: AIBulletSuggestion[],
+  sectionKey: string,
+): AIBulletSuggestion[] {
+  const retained = current.filter(
+    (suggestion) =>
+      suggestion.sectionKey !== sectionKey ||
+      suggestion.uploadId !== null ||
+      suggestion.status === "ACCEPTED" ||
+      suggestion.status === "EDITED",
+  );
+  return [...retained, ...fresh];
+}
+
 export interface SectionEditorProps {
   section: EvalSection;
   evalId: string;
@@ -259,7 +284,7 @@ export function SectionEditor({
           raterDescription: scratchText,
         },
       );
-      const merged = [...localSuggestions, ...(result.suggestions ?? [])];
+      const merged = replaceGeneratedSuggestions(localSuggestions, result.suggestions ?? [], section.section);
       setLocalSuggestions(merged);
       onSuggestionsChange?.(merged);
       setScratchMode(false);
@@ -432,12 +457,7 @@ export function SectionEditor({
                 soldierInfo ?? { rank: "SGT", mos: "11B", dutyTitle: "Soldier", formType: "NCOER_9_1" }
               }
               onSuggestions={(newSuggestions) => {
-                const merged = [
-                  ...localSuggestions.filter(
-                    (s) => !newSuggestions.some((n) => n.id === s.id),
-                  ),
-                  ...newSuggestions,
-                ];
+                const merged = replaceGeneratedSuggestions(localSuggestions, newSuggestions, section.section);
                 handleSuggestionsChange(merged);
                 setAiPanelOpen(true);
               }}
@@ -448,12 +468,7 @@ export function SectionEditor({
               sectionKey={section.section as SectionKey}
               observations={supportFormObservations}
               onSuggestions={(newSuggestions) => {
-                const merged = [
-                  ...localSuggestions.filter(
-                    (suggestion) => !newSuggestions.some((next) => next.id === suggestion.id),
-                  ),
-                  ...newSuggestions,
-                ];
+                const merged = replaceGeneratedSuggestions(localSuggestions, newSuggestions, section.section);
                 handleSuggestionsChange(merged);
                 setAiPanelOpen(true);
               }}
