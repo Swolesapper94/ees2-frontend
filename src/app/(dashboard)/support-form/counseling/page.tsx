@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api/client";
 import type { PerformanceObservation, SupportFormEntry } from "@/types/evaluation";
+import { MessagesSquare } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface CounselingSession {
   id: string;
@@ -111,16 +113,10 @@ function CounselingWorkspaceContent() {
 
   return (
     <main className="space-y-5 p-6">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Counseling Preparation</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Prepare and reconcile performance evidence for one official counseling event. MERIT does not replace the required DA Form 4856 or unit counseling record.</p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader icon={MessagesSquare} eyebrow="Leader development" title="Counseling Preparation" description="Prepare and reconcile performance evidence for one official counseling event. MERIT does not replace DA Form 4856 or the unit's official record." tone="info" actions={<>
           <Button variant="outline" asChild><Link href={`/support-form?formId=${formId}`}>Back to Support Form</Link></Button>
           <Button variant="outline" asChild><Link href={`/support-form/goals?formId=${formId}`}>Goals and Progress</Link></Button>
-        </div>
-      </header>
+        </>} />
 
       {workspace.focusAdvisory && <section className="rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><strong>{workspace.focusAdvisory.approvedGoalCount} approved active goals.</strong> {workspace.focusAdvisory.message}</section>}
       {error && <p className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}

@@ -8,7 +8,7 @@ export interface BulletSkeletonProps {
 }
 
 /**
- * Placeholder bullet cards shown while AI is crafting suggestions. Mirrors
+ * Placeholder bullet cards shown while MERIT is crafting suggestions. Mirrors
  * the shape of BulletCard / AIBulletPanel entries so the layout doesn't
  * jump once real content arrives.
  */

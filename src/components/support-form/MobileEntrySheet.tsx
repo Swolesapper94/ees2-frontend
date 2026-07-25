@@ -59,13 +59,13 @@ export function MobileEntrySheet({ supportFormId, onClose, onSaved }: MobileEntr
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        className="fixed inset-0 z-40 bg-black/40 md:hidden animate-in fade-in duration-200"
         onClick={onClose}
       />
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border rounded-t-lg shadow-[var(--shadow-modal)] md:hidden pb-safe"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border rounded-t-lg shadow-[var(--shadow-modal)] md:hidden pb-safe animate-in slide-in-from-bottom duration-200"
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">

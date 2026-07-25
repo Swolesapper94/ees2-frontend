@@ -73,8 +73,8 @@ function AppointDelegateModal({ onClose, onSuccess }: { onClose: () => void; onS
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-background border border-border rounded-sm shadow-[var(--shadow-modal)] w-full max-w-md mx-4 p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-in fade-in duration-200">
+      <div className="bg-background border border-border rounded-sm shadow-[var(--shadow-modal)] w-full max-w-md mx-4 p-6 animate-in zoom-in-95 duration-200">
         <h2 className="text-base font-semibold mb-4">Appoint a Delegate</h2>
         {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
         <div className="space-y-4">

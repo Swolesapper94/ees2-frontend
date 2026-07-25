@@ -46,7 +46,7 @@ export function NotificationPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-md border border-border bg-card shadow-[var(--shadow-panel)] sm:w-96"
+      className="absolute right-0 top-full z-50 mt-2 w-80 origin-top-right overflow-hidden rounded-md border border-border bg-card shadow-[var(--shadow-panel)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150 sm:w-96"
       role="dialog"
       aria-label="Notifications"
     >

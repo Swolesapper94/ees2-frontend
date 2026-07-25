@@ -3,37 +3,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useApiGet } from "@/lib/api/hooks";
-import type { Evaluation, EvalStatus } from "@/types/evaluation";
+import type { Evaluation } from "@/types/evaluation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RankInsignia } from "@/components/ui/RankInsignia";
 import { rankAbbr } from "@/lib/utils/army-ranks";
 import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
-
-const STATUS_LABELS: Record<EvalStatus, string> = {
-  DRAFT: "Draft",
-  RATER_IN_PROGRESS: "Rater In Progress",
-  PENDING_SENIOR_RATER: "Pending Senior Rater",
-  PENDING_SOLDIER_ACK: "Pending Soldier Ack",
-  PENDING_SUPPLEMENTARY_REVIEW: "Pending Review",
-  PENDING_FINAL_FORM_REVIEW: "Pending Final Form Review",
-  COMPLETE: "Complete",
-  SUBMITTED: "Submitted",
-  ACCEPTED: "Accepted",
-  RETURNED: "Returned",
-};
-
-const STATUS_COLORS: Record<EvalStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  RATER_IN_PROGRESS: "bg-blue-100 text-blue-700",
-  PENDING_SENIOR_RATER: "bg-amber-100 text-amber-700",
-  PENDING_SOLDIER_ACK: "bg-orange-100 text-orange-700",
-  PENDING_SUPPLEMENTARY_REVIEW: "bg-purple-100 text-purple-700",
-  PENDING_FINAL_FORM_REVIEW: "bg-amber-100 text-amber-800",
-  COMPLETE: "bg-green-100 text-green-700",
-  SUBMITTED: "bg-emerald-100 text-emerald-700",
-  ACCEPTED: "bg-emerald-200 text-emerald-900",
-  RETURNED: "bg-red-100 text-red-700",
-};
+import { Users } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface CurrentUser {
   id: string;
@@ -64,7 +42,15 @@ export default function MySoldiersPage() {
   const { data: counselingData } = useApiGet<CounselingData>("/dashboard/counseling");
 
   return (
-    <div className="p-6">
+    <div className="space-y-6 p-4 md:p-6">
+      <PageHeader
+        icon={Users}
+        eyebrow="Rater workspace"
+        title="My Soldiers"
+        description="Monitor counseling and complete evaluations for Soldiers in your assigned rating chains."
+        tone="people"
+        actions={<Button asChild><Link href="/evaluations/new?mode=rater">Start NCOER</Link></Button>}
+      />
       {/* Current User Card */}
       {isLoading && !currentUser ? (
         <div className="mb-6 rounded-sm border border-border bg-card p-4">
@@ -106,19 +92,6 @@ export default function MySoldiersPage() {
         </div>
       )}
 
-      {/* Soldiers Section */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">My Soldiers</h1>
-          <p className="text-sm text-muted-foreground">
-            Evaluations for soldiers in your rating chain.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/evaluations/new?mode=rater">Start NCOER</Link>
-        </Button>
-      </div>
-
       {isLoading && (
         <div className="space-y-2">
           {[...Array(3)].map((_, i) => (
@@ -139,14 +112,7 @@ export default function MySoldiersPage() {
       )}
 
       {!isLoading && !error && evals.length === 0 && (
-        <div className="rounded-sm border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No evaluations found where you are the rater.
-          </p>
-          <Button asChild className="mt-4">
-            <Link href="/evaluations/new?mode=rater">Start an NCOER</Link>
-          </Button>
-        </div>
+        <EmptyState icon={Users} title="No assigned evaluations yet" description="Published rating assignments where you are the rater will appear here." action={<Button asChild><Link href="/evaluations/new?mode=rater">Start an NCOER</Link></Button>} />
       )}
 
       {evals.length > 0 && (
@@ -157,7 +123,7 @@ export default function MySoldiersPage() {
             return (
               <div
                 key={e.id}
-                className="flex items-center justify-between rounded-sm border border-border bg-card p-4 hover:bg-accent transition-colors"
+                className="flex flex-col items-stretch justify-between gap-3 rounded-sm border border-border bg-card p-4 shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-panel sm:flex-row sm:items-center"
               >
                 <Link href={`/evaluations/${e.id}/admin`} className="min-w-0 flex flex-1 items-center gap-3">
                   {soldier && <RankInsignia rank={soldier.rank} size="md" />}
@@ -180,8 +146,8 @@ export default function MySoldiersPage() {
                     )}
                   </div>
                 </Link>
-                <div className="ml-3 flex shrink-0 items-center gap-2">
-                  <span className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}>{STATUS_LABELS[e.status]}</span>
+                <div className="flex shrink-0 flex-wrap items-center gap-2 sm:ml-3">
+                  <StatusBadge status={e.status} />
                   {e.supportFormId && <Button variant="outline" size="sm" asChild><Link href={`/support-form?formId=${e.supportFormId}`}>Record observation</Link></Button>}
                 </div>
               </div>

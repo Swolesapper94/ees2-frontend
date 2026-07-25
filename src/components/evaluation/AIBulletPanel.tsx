@@ -9,7 +9,9 @@ import type {
   SectionKey,
 } from "@/types/evaluation";
 import { cn } from "@/lib/utils/cn";
-import { AlertTriangle } from "lucide-react";
+import { transitions } from "@/lib/utils/motion";
+import { AlertTriangle, Sparkles } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface AIBulletPanelProps {
   evalId: string;
@@ -98,11 +100,11 @@ export function AIBulletPanel({
 
   if (sectionSuggestions.length === 0) {
     return (
-      <div className="rounded border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
-        No AI suggestions yet.
-        <br />
-        Upload a support form or generate a {contentLabel} from scratch below.
-      </div>
+      <EmptyState
+        icon={Sparkles}
+        title="No MERIT suggestions yet"
+        description={`Upload a support form or generate a ${contentLabel} from scratch below.`}
+      />
     );
   }
 
@@ -122,7 +124,8 @@ export function AIBulletPanel({
           <div
             key={s.id}
             className={cn(
-              "rounded border p-3 text-sm transition-all",
+              "rounded border p-3 text-sm",
+              transitions.panel,
               isActedOn ? "opacity-60 bg-muted" : "bg-card border-border",
             )}
           >

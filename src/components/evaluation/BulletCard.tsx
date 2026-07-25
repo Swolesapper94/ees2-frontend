@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
+import { transitions } from "@/lib/utils/motion";
 import type { BulletProvenanceEntry, BulletSource } from "@/types/evaluation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 export interface BulletCardProps {
   text: string;
   source: BulletSource;
-  /** Provenance chain for AI-sourced bullets (MVP audit 5.9) — null for
+  /** Provenance chain for MERIT-sourced bullets (MVP audit 5.9) — null for
    * HUMAN bullets or bullets predating this feature. */
   provenance?: BulletProvenanceEntry | null;
   onEdit?: () => void;
@@ -18,14 +19,14 @@ export interface BulletCardProps {
 const SOURCE_BADGE: Record<BulletSource, { label: string; className: string }> =
   {
     HUMAN: { label: "Written", className: "bg-emerald-100 text-emerald-800" },
-    AI_MODIFIED: { label: "AI · edited", className: "bg-amber-100 text-amber-800" },
-    AI_UNMODIFIED: { label: "AI · as-is", className: "bg-red-100 text-red-800" },
+    AI_MODIFIED: { label: "MERIT · edited", className: "bg-amber-100 text-amber-800" },
+    AI_UNMODIFIED: { label: "MERIT · as-is", className: "bg-red-100 text-red-800" },
   };
 
 /**
  * A committed bullet on the form. The source badge keeps provenance visible —
- * unedited AI output is deliberately flagged. See start.md §6. When a
- * provenance chain exists (AI-sourced bullets), a "View source" toggle shows
+ * unedited MERIT output is deliberately flagged. See start.md §6. When a
+ * provenance chain exists (MERIT-sourced bullets), a "View source" toggle shows
  * the original source entry text + artifact captions this bullet was
  * generated from — resolved from the immutable snapshot captured at
  * generation time, so it stays accurate even if the entry is later edited
@@ -37,7 +38,7 @@ export function BulletCard({ text, source, provenance, onEdit, onRemove }: Bulle
   const snapshot = provenance?.sourceSnapshot;
 
   return (
-    <div className="rounded-sm border border-border bg-card p-3">
+    <div className={cn("rounded-sm border border-border bg-card p-3", transitions.bullet)}>
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm">{text}</p>
         <div className="flex shrink-0 items-center gap-2">

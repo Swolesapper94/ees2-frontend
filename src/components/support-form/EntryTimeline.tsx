@@ -1,5 +1,7 @@
 "use client";
 
+import { History } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { EntryType } from "@/types/evaluation";
 
 export interface SupportEntry {
@@ -16,9 +18,11 @@ export interface EntryTimelineProps {
 export function EntryTimeline({ entries }: EntryTimelineProps) {
   if (entries.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
-        No entries logged yet for this period.
-      </p>
+      <EmptyState
+        icon={History}
+        title="No entries logged yet for this period"
+        description="Accomplishments and objectives will appear here in chronological order as they're added."
+      />
     );
   }
   return (

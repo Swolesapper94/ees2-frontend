@@ -15,7 +15,7 @@ export interface BulletStagingPanelProps {
 }
 
 /**
- * Holding area between AI generation and the final form. Nothing here counts
+ * Holding area between MERIT generation and the final form. Nothing here counts
  * until the rater explicitly commits it — Gate 3 of the anti-autopilot flow.
  */
 export function BulletStagingPanel({ staging }: BulletStagingPanelProps) {

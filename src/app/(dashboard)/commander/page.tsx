@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useApiGet } from "@/lib/api/hooks";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Building2 } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge, type DisplayStatus } from "@/components/dashboard/StatusBadge";
 
 interface FormationSoldier {
   id: string;
@@ -32,19 +35,6 @@ interface FormationData {
     chainGapCount: number;
   };
 }
-
-const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  NOT_STARTED:                  { label: "Not Started",      className: "bg-gray-100 text-gray-600" },
-  DRAFT:                        { label: "Draft",            className: "bg-slate-100 text-slate-600" },
-  RATER_IN_PROGRESS:            { label: "In Progress",      className: "bg-blue-50 text-blue-700" },
-  PENDING_SENIOR_RATER:         { label: "Pending SR",       className: "bg-amber-50 text-amber-700" },
-  PENDING_SOLDIER_ACK:          { label: "Pending Ack",      className: "bg-amber-50 text-amber-700" },
-  PENDING_SUPPLEMENTARY_REVIEW: { label: "Pending Review",   className: "bg-amber-50 text-amber-700" },
-  COMPLETE:                     { label: "Complete",         className: "bg-green-50 text-green-700" },
-  SUBMITTED:                    { label: "Submitted",        className: "bg-green-50 text-green-700" },
-  ACCEPTED:                     { label: "Accepted",         className: "bg-green-100 text-green-800" },
-  RETURNED:                     { label: "Returned",         className: "bg-red-50 text-red-700" },
-};
 
 export default function CommanderPage() {
   const { data, error, isLoading } = useApiGet<FormationData>("/commander/formation");
@@ -93,12 +83,7 @@ export default function CommanderPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Formation Overview</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          All soldiers in your command — status visibility only, not eval content.
-        </p>
-      </div>
+      <PageHeader icon={Building2} eyebrow="Command visibility" title="Formation Overview" description="Monitor evaluation readiness across your formation. This view exposes workflow status, not evaluation content." tone="army" />
 
       {/* Chain-gap alert — Soldiers whose most recent rating chain ended
           with no active replacement (PCS/change-of-rater gap, a recurring
@@ -132,27 +117,27 @@ export default function CommanderPage() {
 
       {/* Stat bar */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="rounded-sm border border-border bg-card p-4">
+        <div className="rounded-sm border border-l-4 border-border border-l-slate-500 bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Soldiers</p>
           <p className="text-3xl font-bold mt-0.5">{stats.totalSoldiers}</p>
         </div>
-        <div className="rounded-sm border border-border bg-card p-4">
+        <div className="rounded-sm border border-l-4 border-border border-l-lime-700 bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Evals Complete</p>
           <p className="text-3xl font-bold mt-0.5 text-[#4B5320]">
             {stats.completeCount} <span className="text-base font-normal text-muted-foreground">({stats.completePercent}%)</span>
           </p>
         </div>
-        <div className={`rounded-sm border p-4 ${stats.overdueCount > 0 ? "border-red-200 bg-red-50" : "border-border bg-card"}`}>
+        <div className={`rounded-sm border border-l-4 p-4 shadow-card ${stats.overdueCount > 0 ? "border-red-200 border-l-red-700 bg-red-50" : "border-border border-l-slate-400 bg-card"}`}>
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Overdue</p>
           <p className={`text-3xl font-bold mt-0.5 ${stats.overdueCount > 0 ? "text-red-700" : ""}`}>{stats.overdueCount}</p>
         </div>
-        <div className="rounded-sm border border-border bg-card p-4">
+        <div className="rounded-sm border border-l-4 border-border border-l-amber-500 bg-card p-4 shadow-card">
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Not Started</p>
           <p className="text-3xl font-bold mt-0.5">
             {data.formation.filter((s) => s.evalStatus === "NOT_STARTED").length}
           </p>
         </div>
-        <div className={`rounded-sm border p-4 ${stats.chainGapCount > 0 ? "border-amber-200 bg-amber-50" : "border-border bg-card"}`}>
+        <div className={`rounded-sm border border-l-4 p-4 shadow-card ${stats.chainGapCount > 0 ? "border-amber-200 border-l-amber-600 bg-amber-50" : "border-border border-l-slate-400 bg-card"}`}>
           <p className="text-xs text-muted-foreground uppercase tracking-wide">Chain Gaps</p>
           <p className={`text-3xl font-bold mt-0.5 ${stats.chainGapCount > 0 ? "text-amber-700" : ""}`}>{stats.chainGapCount}</p>
         </div>
@@ -180,7 +165,6 @@ export default function CommanderPage() {
           </thead>
           <tbody>
             {filtered.map((s) => {
-              const badge = STATUS_BADGE[s.evalStatus] ?? { label: s.evalStatus, className: "bg-gray-100 text-gray-600" };
               return (
                 <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                   <td className="py-2 px-3 font-medium">
@@ -199,9 +183,7 @@ export default function CommanderPage() {
                     {s.rater ? `${s.rater.rank} ${s.rater.lastName}` : "—"}
                   </td>
                   <td className="py-2 px-3">
-                    <span className={`px-1.5 py-0.5 text-xs rounded-sm ${badge.className}`}>
-                      {badge.label}
-                    </span>
+                    <StatusBadge status={s.evalStatus as DisplayStatus} />
                   </td>
                   <td className="py-2 px-3 text-center">
                     {s.overdueMilestoneCount > 0 ? (

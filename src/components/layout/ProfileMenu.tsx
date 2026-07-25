@@ -8,7 +8,6 @@ import {
   RefreshCw,
   Bug,
 } from "lucide-react";
-import { SupportChatModal } from "@/components/support/SupportChatModal";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { api } from "@/lib/api/client";
 import { clearClientApiCache, notifyAuthChanged } from "@/lib/api/cache";
@@ -42,9 +41,13 @@ function getInitials(user: DevAuthUser | null): string {
     .join("");
 }
 
-export function ProfileMenu() {
+interface ProfileMenuProps {
+  /** Opens the MERIT Support panel that TopNav anchors under its own trigger. */
+  onOpenSupport?: () => void;
+}
+
+export function ProfileMenu({ onOpenSupport }: ProfileMenuProps) {
   const [open, setOpen] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
   const [seedingNotifications, setSeedingNotifications] = useState(false);
   const [fullUser, setFullUser] = useState<DevAuthUser | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -131,20 +134,19 @@ export function ProfileMenu() {
     {
       icon: LifeBuoy,
       label: "Support",
-      description: "Chat with EES Support bot",
-      action: () => setSupportOpen(true),
+      description: "Chat with MERIT Support",
+      action: () => onOpenSupport?.(),
       highlight: true,
     },
   ];
 
   return (
-    <>
-      <div ref={menuRef} className="relative">
-        <button
-          type="button"
-          aria-label="Account menu"
-          aria-expanded={open}
-          onClick={() => setOpen((prev) => !prev)}
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        aria-label="Account menu"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
           className="flex items-center justify-center rounded-full transition-opacity hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <UserAvatar
@@ -156,7 +158,7 @@ export function ProfileMenu() {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-md border border-border bg-card shadow-[var(--shadow-panel)]">
+          <div className="absolute right-0 top-full z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-md border border-border bg-card shadow-[var(--shadow-panel)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-1 duration-150">
             {/* User identity header */}
             <div className="border-b border-border px-3 py-3">
               <div className="flex items-center gap-2.5">
@@ -260,12 +262,6 @@ export function ProfileMenu() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Support Chat Modal — outside the dropdown so it persists when menu closes */}
-      {supportOpen && (
-        <SupportChatModal onClose={() => setSupportOpen(false)} />
-      )}
-    </>
+    </div>
   );
 }

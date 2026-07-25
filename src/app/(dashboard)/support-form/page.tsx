@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/client";
 import type { ArtifactType, SupportForm, SupportFormEntry } from "@/types/evaluation";
-import { AlertTriangle, Award, FileText, Image as ImageIcon, Paperclip, Plus } from "lucide-react";
+import { AlertTriangle, Award, FileText, Image as ImageIcon, NotebookTabs, Paperclip, Plus, PenLine } from "lucide-react";
 import { PerformanceObservationsPanel } from "@/components/support-form/PerformanceObservationsPanel";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { isPartIVSectionKey, SECTION_VISUALS } from "@/lib/utils/section-visuals";
+import { cn } from "@/lib/utils/cn";
 
 const SECTION_LABELS: Record<string, string> = {
   CHARACTER: "Character",
@@ -85,7 +89,7 @@ function StartSupportFormModal({ candidates, onClose, onCreated }: { candidates:
     }
   }
 
-  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="start-support-form-title"><div className="w-full max-w-xl rounded-sm border border-border bg-background shadow-modal"><div className="border-b border-border px-5 py-4"><h2 id="start-support-form-title" className="text-lg font-semibold">Start Support Form</h2><p className="mt-1 text-sm text-muted-foreground">Create a performance log for one current rating assignment. The rated Soldier and assigned rater can add entries afterward.</p></div><div className="space-y-4 p-5">{error && <p className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}<label className="block text-sm font-medium">Rating assignment<select aria-label="Rating assignment" value={candidateId} onChange={(event) => selectCandidate(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2">{candidates.map((item) => <option key={item.id} value={item.id}>{item.ratedSoldier.rank} {item.ratedSoldier.lastName}, {item.ratedSoldier.firstName} - Rater: {item.rater.rank} {item.rater.lastName}</option>)}</select></label>{candidate && <p className="rounded-sm border border-border bg-muted/30 p-3 text-xs text-muted-foreground">Senior Rater: {candidate.seniorRater.rank} {candidate.seniorRater.lastName} · Effective from {new Date(candidate.effectiveFrom).toLocaleDateString()}</p>}<div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Duty title<input value={dutyTitle} onChange={(event) => setDutyTitle(event.target.value)} placeholder="e.g. Squad Leader" className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label><label className="text-sm font-medium">Duty MOSC <span className="font-normal text-muted-foreground">(if applicable)</span><input value={dutyMosc} onChange={(event) => setDutyMosc(event.target.value)} placeholder={candidate?.ratedSoldier.mos ?? "MOS"} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label><label className="text-sm font-medium">Rating period start<input aria-label="Support form rating period start" type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label><label className="text-sm font-medium">Rating period end <span className="font-normal text-muted-foreground">(optional)</span><input aria-label="Support form rating period end" type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label></div></div><div className="flex justify-end gap-3 border-t border-border px-5 py-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={create} disabled={saving || !candidate || !dutyTitle.trim() || !periodStart}>{saving ? "Starting..." : "Start support form"}</Button></div></div></div>;
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-labelledby="start-support-form-title"><div className="w-full max-w-xl rounded-sm border border-border bg-background shadow-modal animate-in zoom-in-95 duration-200"><div className="border-b border-border px-5 py-4"><h2 id="start-support-form-title" className="text-lg font-semibold">Start Support Form</h2><p className="mt-1 text-sm text-muted-foreground">Create a performance log for one current rating assignment. The rated Soldier and assigned rater can add entries afterward.</p></div><div className="space-y-4 p-5">{error && <p className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}<label className="block text-sm font-medium">Rating assignment<select aria-label="Rating assignment" value={candidateId} onChange={(event) => selectCandidate(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2">{candidates.map((item) => <option key={item.id} value={item.id}>{item.ratedSoldier.rank} {item.ratedSoldier.lastName}, {item.ratedSoldier.firstName} - Rater: {item.rater.rank} {item.rater.lastName}</option>)}</select></label>{candidate && <p className="rounded-sm border border-border bg-muted/30 p-3 text-xs text-muted-foreground">Senior Rater: {candidate.seniorRater.rank} {candidate.seniorRater.lastName} · Effective from {new Date(candidate.effectiveFrom).toLocaleDateString()}</p>}<div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Duty title<input value={dutyTitle} onChange={(event) => setDutyTitle(event.target.value)} placeholder="e.g. Squad Leader" className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label><label className="text-sm font-medium">Duty MOSC <span className="font-normal text-muted-foreground">(if applicable)</span><input value={dutyMosc} onChange={(event) => setDutyMosc(event.target.value)} placeholder={candidate?.ratedSoldier.mos ?? "MOS"} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label><label className="text-sm font-medium">Rating period start<input aria-label="Support form rating period start" type="date" value={periodStart} onChange={(event) => setPeriodStart(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label><label className="text-sm font-medium">Rating period end <span className="font-normal text-muted-foreground">(optional)</span><input aria-label="Support form rating period end" type="date" value={periodEnd} onChange={(event) => setPeriodEnd(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2" /></label></div></div><div className="flex justify-end gap-3 border-t border-border px-5 py-4"><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={create} disabled={saving || !candidate || !dutyTitle.trim() || !periodStart}>{saving ? "Starting..." : "Start support form"}</Button></div></div></div>;
 }
 
 export default function SupportFormPage() {
@@ -203,15 +207,14 @@ function SupportFormContent() {
   const isAssignedRater = Boolean(currentUserId && selectedAssignment?.rater.id === currentUserId);
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Support Form</h1>
-          <p className="text-sm text-muted-foreground">
-            Continuous performance log — objectives and accomplishments.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="space-y-5 p-4 md:p-6">
+      <PageHeader
+        icon={NotebookTabs}
+        eyebrow="Continuous performance record"
+        title="Support Form"
+        description="Capture accomplishments and proof throughout the rating period, then trace that evidence into counseling and evaluation drafting."
+        tone="evidence"
+        actions={<>
         {form && <Button variant="outline" asChild><Link href={`/support-form/goals?formId=${form.id}`}>Goals</Link></Button>}
         {form && <Button variant="outline" asChild><Link href={`/support-form/counseling?formId=${form.id}`}>Counseling</Link></Button>}
         {candidates.length > 0 && <Button variant="outline" onClick={() => setShowStartForm(true)}><Plus className="h-4 w-4" />Start form</Button>}
@@ -222,8 +225,8 @@ function SupportFormContent() {
         ) : (
           <Button disabled>Log entry</Button>
         )}
-        </div>
-      </div>
+        </>}
+      />
 
       {loading && (
         <div className="space-y-2">
@@ -266,18 +269,24 @@ function SupportFormContent() {
       )}
 
       {!loading && !error && form && entries.length === 0 && (
-        <div className="rounded-sm border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">No entries yet.</p>
-        </div>
+        <EmptyState
+          icon={PenLine}
+          title="No entries yet"
+          description="Log your first accomplishment or objective to start building this rating period's record."
+        />
       )}
 
       {!loading && !error && entries.length > 0 && (
         <div className="space-y-3">
-          {entries.map((entry) => (
-            <div key={entry.id} className="rounded-sm border border-border bg-card p-4">
+          {entries.map((entry) => {
+            const visual = isPartIVSectionKey(entry.section) ? SECTION_VISUALS[entry.section] : null;
+            const DimensionIcon = visual?.Icon;
+            return (
+            <article key={entry.id} className={cn("rounded-sm border border-l-4 bg-card p-4 shadow-card transition-all duration-150 hover:shadow-panel", visual?.accent ?? "border-l-primary")}>
               <div className="mb-1 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="rounded-sm bg-muted px-2 py-0.5 text-xs font-medium">
+                  <span className={cn("inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-semibold", visual?.iconSurface ?? "bg-muted text-foreground")}>
+                    {DimensionIcon && <DimensionIcon className="h-3 w-3" />}
                     {SECTION_LABELS[entry.section] ?? entry.section}
                   </span>
                   <span
@@ -325,8 +334,8 @@ function SupportFormContent() {
                   })}
                 </div>
               )}
-            </div>
-          ))}
+            </article>
+          );})}
         </div>
       )}
       {showStartForm && <StartSupportFormModal candidates={candidates} onClose={() => setShowStartForm(false)} onCreated={(created, assignment) => { const option = { form: created, assignment }; setFormOptions((current) => [option, ...current]); setForm(created); setEntries(created.entries ?? []); }} />}

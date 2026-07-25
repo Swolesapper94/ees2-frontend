@@ -55,8 +55,8 @@ export function UploadedSupportFormViewer({ evalId, fileType }: UploadedSupportF
       </button>
       {error && <p className="text-xs text-destructive">{error}</p>}
       {viewerUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Original uploaded support form">
-          <div className="flex h-[min(90vh,900px)] w-full max-w-6xl flex-col rounded-sm border border-border bg-background shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-label="Original uploaded support form">
+          <div className="flex h-[min(90vh,900px)] w-full max-w-6xl flex-col rounded-sm border border-border bg-background shadow-lg animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <h2 className="text-sm font-semibold">Original Uploaded Support Form</h2>

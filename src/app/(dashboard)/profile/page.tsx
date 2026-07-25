@@ -7,6 +7,8 @@ import { RankInsignia } from "@/components/ui/RankInsignia";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { api, ApiError } from "@/lib/api/client";
 import { rankAbbr, RANK_TO_GRADE } from "@/lib/utils/army-ranks";
+import { UserRound } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 interface Unit {
   id: string;
@@ -101,14 +103,11 @@ export default function ProfilePage() {
   const initials = `${me.firstName[0] ?? ""}${me.lastName[0] ?? ""}`.toUpperCase();
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Profile</h1>
-        <p className="text-sm text-muted-foreground">View account &amp; unit info.</p>
-      </div>
+    <div className="max-w-3xl space-y-6 p-4 md:p-6">
+      <PageHeader icon={UserRound} eyebrow="Identity and assignment context" title="My Profile" description="View your EES account, authoritative personnel context, and unit information." tone="info" />
 
       {/* Identity card */}
-      <div className="rounded-sm border border-border bg-card p-5">
+      <div className="rounded-sm border border-border bg-card p-5 shadow-card">
         <div className="flex items-center gap-4">
           <UserAvatar src={me.profilePictureUrl} initials={initials} size="lg" />
           <RankInsignia rank={me.rank} size="lg" />
@@ -135,7 +134,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Account info */}
-      <div className="rounded-sm border border-border bg-card p-5">
+      <div className="rounded-sm border border-border bg-card p-5 shadow-card">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Account
         </h2>
@@ -150,7 +149,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Unit info */}
-      <div className="rounded-sm border border-border bg-card p-5">
+      <div className="rounded-sm border border-border bg-card p-5 shadow-card">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Unit
         </h2>
@@ -167,7 +166,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile picture */}
-      <div className="rounded-sm border border-border bg-card p-5">
+      <div className="rounded-sm border border-border bg-card p-5 shadow-card">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Profile Picture
         </h2>

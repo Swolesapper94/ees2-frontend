@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { HandHelping } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusChip } from "@/components/ui/StatusChip";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Capability =
   | "VIEW_WORKFLOW_STATUS"
@@ -106,13 +110,6 @@ const SAFE_TEMPLATES: Record<GrantType, Capability[]> = {
   ],
 };
 
-function statusClass(status: GrantStatus) {
-  if (status === "ACTIVE") return "bg-green-100 text-green-800";
-  if (status === "PENDING") return "bg-amber-100 text-amber-800";
-  if (status === "SUSPENDED") return "bg-red-100 text-red-800";
-  return "bg-muted text-muted-foreground";
-}
-
 function scopeLabel(grant: AccessGrant) {
   if (grant.scope.supportFormId) return "Scoped support form";
   if (grant.scope.evaluationId) return "Scoped evaluation";
@@ -130,13 +127,13 @@ function GrantCard({ grant, perspective, onRevoke, onActivity, onAccept, onDecli
 }) {
   const person = perspective === "grantor" ? grant.person : grant.subject ?? grant.grantor;
   return (
-    <article className="rounded-sm border border-border bg-card p-4">
+    <article className="rounded-sm border border-sky-200 bg-card p-4 shadow-card transition-all duration-150 hover:shadow-panel">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="font-medium">{person?.displayName ?? "Access grant pending migration"}</p>
           <p className="mt-1 text-xs text-muted-foreground">{grant.type ? TYPE_LABEL[grant.type] : "Legacy grant requiring review"} · {scopeLabel(grant)}</p>
         </div>
-        <span className={`rounded-sm px-2 py-1 text-xs font-medium ${statusClass(grant.status)}`}>{grant.status.replace("_", " ")}</span>
+        <StatusChip status={grant.status} />
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
         {grant.effectiveFrom && `From ${format(new Date(grant.effectiveFrom), "d MMM yyyy")}`}
@@ -208,8 +205,8 @@ function CreateGrantModal({ evaluations, forms, onClose, onCreated }: { evaluati
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="create-access-grant-title">
-      <div className="w-full max-w-xl rounded-sm border border-border bg-background p-6 shadow-lg">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-labelledby="create-access-grant-title">
+      <div className="w-full max-w-xl rounded-sm border border-border bg-background p-6 shadow-lg animate-in zoom-in-95 duration-200">
         <h2 id="create-access-grant-title" className="text-lg font-semibold">Grant Access and Assistance</h2>
         <p className="mt-1 text-sm text-muted-foreground">Step {step} of 5. The helper acts under their own account; every action is attributable.</p>
         {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
@@ -315,20 +312,17 @@ export default function AccessAndAssistancePage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-        <div><h1 className="text-2xl font-bold tracking-tight">Access and Assistance</h1><p className="text-sm text-muted-foreground">Grant limited, time-bound help without transferring identity or rating authority.</p></div>
-        {view === "helping-me" && <Button onClick={() => setShowCreate(true)}>Grant access</Button>}
-      </div>
+    <div className="space-y-5 p-4 md:p-6">
+      <PageHeader icon={HandHelping} eyebrow="Scoped assistance" title="Access and Assistance" description="Grant limited, time-bound help without transferring identity, signature, or rating authority." tone="info" actions={view === "helping-me" && <Button onClick={() => setShowCreate(true)}>Grant access</Button>} />
       <div className="mb-5 flex gap-2 border-b border-border">
         <button type="button" onClick={() => setView("helping-me")} className={`px-3 py-2 text-sm ${view === "helping-me" ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}>People helping me</button>
         <button type="button" onClick={() => setView("i-assist")} className={`px-3 py-2 text-sm ${view === "i-assist" ? "border-b-2 border-primary font-medium" : "text-muted-foreground"}`}>People I assist</button>
       </div>
       {error && <p className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      {loading ? <p className="text-sm text-muted-foreground">Loading access grants…</p> : grants.length === 0 ? <div className="rounded-sm border border-dashed border-border p-8 text-center text-sm text-muted-foreground">{view === "helping-me" ? "You have not granted anyone access to assist with your evaluation work." : "You do not currently have any active assistance assignments."}</div> : <div className="space-y-3">{grants.map((grant) => <GrantCard key={grant.id} grant={grant} perspective={view === "helping-me" ? "grantor" : "delegate"} onRevoke={setRevokeGrant} onActivity={activityFor} onAccept={(grant) => respond(grant, "accept")} onDecline={(grant) => respond(grant, "decline")} />)}</div>}
+      {loading ? <p className="text-sm text-muted-foreground">Loading access grants…</p> : grants.length === 0 ? <EmptyState icon={HandHelping} title={view === "helping-me" ? "No one is helping you yet" : "No active assistance assignments"} description={view === "helping-me" ? "Grant scoped access when you need help organizing evidence or administrative work." : "Accepted assistance grants will appear here."} /> : <div className="space-y-3">{grants.map((grant) => <GrantCard key={grant.id} grant={grant} perspective={view === "helping-me" ? "grantor" : "delegate"} onRevoke={setRevokeGrant} onActivity={activityFor} onAccept={(grant) => respond(grant, "accept")} onDecline={(grant) => respond(grant, "decline")} />)}</div>}
       {showCreate && <CreateGrantModal evaluations={evaluations} forms={forms} onClose={() => setShowCreate(false)} onCreated={() => load()} />}
-      {revokeGrant && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"><div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg"><h2 className="text-lg font-semibold">Revoke access grant?</h2><p className="mt-2 text-sm text-muted-foreground">Access stops immediately. The helper remains attributable in the activity history.</p><div className="mt-5 flex justify-end gap-3"><Button variant="outline" onClick={() => setRevokeGrant(null)}>Cancel</Button><Button variant="destructive" onClick={revoke}>Revoke access</Button></div></div></div>}
-      {activity && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"><div className="w-full max-w-2xl rounded-sm border border-border bg-background p-5 shadow-lg"><div className="flex justify-between gap-3"><h2 className="text-lg font-semibold">Grant activity</h2><Button variant="outline" size="sm" onClick={() => setActivity(null)}>Close</Button></div><div className="mt-4 max-h-96 space-y-3 overflow-auto">{activity.length === 0 ? <p className="text-sm text-muted-foreground">No activity has been recorded for this grant.</p> : activity.map((event) => <div key={event.id} className="border-l-2 border-primary/40 pl-3 text-sm"><p className="font-medium">{event.action.replaceAll("_", " ")}</p><p className="mt-1 text-xs text-muted-foreground">{event.actor ? `${event.actor.rank} ${event.actor.firstName} ${event.actor.lastName}` : "System"} · {format(new Date(event.createdAt), "d MMM yyyy, HH:mm")}{event.delegationCapability ? ` · ${event.delegationCapability.replaceAll("_", " ")}` : ""}</p></div>)}</div></div></div>}
+      {revokeGrant && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true"><div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg animate-in zoom-in-95 duration-200"><h2 className="text-lg font-semibold">Revoke access grant?</h2><p className="mt-2 text-sm text-muted-foreground">Access stops immediately. The helper remains attributable in the activity history.</p><div className="mt-5 flex justify-end gap-3"><Button variant="outline" onClick={() => setRevokeGrant(null)}>Cancel</Button><Button variant="destructive" onClick={revoke}>Revoke access</Button></div></div></div>}
+      {activity && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200" role="dialog" aria-modal="true"><div className="w-full max-w-2xl rounded-sm border border-border bg-background p-5 shadow-lg animate-in zoom-in-95 duration-200"><div className="flex justify-between gap-3"><h2 className="text-lg font-semibold">Grant activity</h2><Button variant="outline" size="sm" onClick={() => setActivity(null)}>Close</Button></div><div className="mt-4 max-h-96 space-y-3 overflow-auto">{activity.length === 0 ? <p className="text-sm text-muted-foreground">No activity has been recorded for this grant.</p> : activity.map((event) => <div key={event.id} className="border-l-2 border-primary/40 pl-3 text-sm"><p className="font-medium">{event.action.replaceAll("_", " ")}</p><p className="mt-1 text-xs text-muted-foreground">{event.actor ? `${event.actor.rank} ${event.actor.firstName} ${event.actor.lastName}` : "System"} · {format(new Date(event.createdAt), "d MMM yyyy, HH:mm")}{event.delegationCapability ? ` · ${event.delegationCapability.replaceAll("_", " ")}` : ""}</p></div>)}</div></div></div>}
     </div>
   );
 }

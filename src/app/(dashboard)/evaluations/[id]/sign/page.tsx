@@ -11,6 +11,7 @@ import {
 } from "@/lib/utils/form-constants";
 import type { EvalSection, EvalStatus, SeniorRaterRating } from "@/types/evaluation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SignatureStepper } from "@/components/evaluation/SignatureStepper";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type SignRole = "RATER" | "SENIOR_RATER" | "REVIEWER" | "SOLDIER";
@@ -578,7 +579,11 @@ export default function SignPage() {
       {toastMessage && (
         <ToastMessage message={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
-      <div className="flex h-full gap-0 overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-border bg-muted/20 px-6 py-3">
+        <SignatureStepper status={evalData.status} requiresSupplementaryReview={evalData.requiresSupplementaryReview} />
+      </div>
+      <div className="flex flex-1 gap-0 overflow-hidden">
       {/* Left: Evaluation Document */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden border-r border-border">
         <div className="shrink-0 px-6 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
@@ -632,6 +637,7 @@ export default function SignPage() {
           />
         </div>
       </div>
+    </div>
     </div>
     </>
   );

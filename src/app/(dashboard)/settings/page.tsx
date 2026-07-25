@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/Switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api/client";
+import { Settings } from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 type NotificationCategory =
   | "EVAL_LIFECYCLE"
@@ -87,11 +89,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Notification preferences.</p>
-      </div>
+    <div className="max-w-3xl space-y-6 p-4 md:p-6">
+      <PageHeader icon={Settings} eyebrow="Personal configuration" title="Settings" description="Choose which workflow and system notifications you receive." tone="neutral" />
 
       {error && (
         <div className="rounded-sm border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -99,7 +98,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="rounded-sm border border-border bg-card p-5">
+      <div className="rounded-sm border border-border bg-card p-5 shadow-card">
         <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Notifications
         </h2>

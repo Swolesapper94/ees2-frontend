@@ -45,7 +45,7 @@ const FLAG_LABELS: Record<string, string> = {
 
 /**
  * Whole-report HDQA/workflow preflight. This does not replace the per-bullet
- * AI compliance checks; it catches cross-section, routing, and final-form
+ * MERIT compliance checks; it catches cross-section, routing, and final-form
  * issues that only exist once the report is assembled.
  */
 export function ConsistencyCheckModal({
@@ -101,8 +101,8 @@ export function ConsistencyCheckModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-border bg-background shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-background shadow-xl animate-in zoom-in-95 duration-200">
         <div className="border-b border-border px-5 py-4">
           <h2 className="text-base font-bold tracking-tight">Pre-Submission Check</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">

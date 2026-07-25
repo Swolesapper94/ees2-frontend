@@ -83,7 +83,7 @@ export interface EvaluationReturn {
   resolvedAt: string | null;
 }
 
-// ── AI Pipeline types ────────────────────────────────────────────────────────
+// ── MERIT assistance pipeline types ──────────────────────────────────────────
 
 export type SupportFormUploadStatus =
   | "PENDING_EXTRACT"

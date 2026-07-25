@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils/cn";
+import { transitions } from "@/lib/utils/motion";
 
 /**
  * Computed "NOT_STARTED" state (no DB row) is also accepted so
@@ -52,7 +53,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       className={cn(
         "inline-flex items-center gap-1.5 px-2 py-0.5",
         "text-xs font-medium tracking-wide uppercase rounded-sm border border-current",
-        "transition-colors duration-150",
+        transitions.badge,
         colorClass,
         className,
       )}

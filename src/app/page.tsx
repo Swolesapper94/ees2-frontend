@@ -9,7 +9,7 @@ export default function HomePage() {
         </h1>
         <p className="mt-2 max-w-md text-muted-foreground">
           Mission Evaluation Record &amp; Insight Tool. A modern, soldier-focused
-          Army evaluation platform with AI-assisted NCOER writing and continuous support-form capture.
+          Army evaluation platform with MERIT-assisted NCOER writing and continuous support-form capture.
         </p>
       </div>
       <div className="flex gap-4">

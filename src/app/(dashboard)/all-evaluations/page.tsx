@@ -10,6 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RankInsignia } from "@/components/ui/RankInsignia";
 import { rankAbbr } from "@/lib/utils/army-ranks";
 import { formatReturnReason, latestReturn } from "@/lib/utils/return-reasons";
+import { ClipboardList, Files, FilterX } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StatusBadge } from "@/components/dashboard/StatusBadge";
 
 const STATUS_LABELS: Record<EvalStatus, string> = {
   DRAFT: "Draft",
@@ -22,19 +26,6 @@ const STATUS_LABELS: Record<EvalStatus, string> = {
   SUBMITTED: "Submitted",
   ACCEPTED: "Accepted",
   RETURNED: "Returned",
-};
-
-const STATUS_COLORS: Record<EvalStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  RATER_IN_PROGRESS: "bg-blue-100 text-blue-700",
-  PENDING_SENIOR_RATER: "bg-amber-100 text-amber-700",
-  PENDING_SOLDIER_ACK: "bg-orange-100 text-orange-700",
-  PENDING_SUPPLEMENTARY_REVIEW: "bg-purple-100 text-purple-700",
-  PENDING_FINAL_FORM_REVIEW: "bg-amber-100 text-amber-800",
-  COMPLETE: "bg-green-100 text-green-700",
-  SUBMITTED: "bg-emerald-100 text-emerald-700",
-  ACCEPTED: "bg-emerald-200 text-emerald-900",
-  RETURNED: "bg-red-100 text-red-700",
 };
 
 interface EvalWithChain extends Evaluation {
@@ -90,21 +81,11 @@ export default function AllEvaluationsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">All Evaluations</h1>
-          <p className="text-sm text-muted-foreground">
-            Every evaluation in the system.
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/evaluations/new">Start NCOER</Link>
-        </Button>
-      </div>
+    <div className="space-y-5 p-4 md:p-6">
+      <PageHeader icon={Files} eyebrow="Administrative visibility" title="All Evaluations" description="Search and monitor every evaluation available within your authorized scope." tone="neutral" actions={<Button asChild><Link href="/evaluations/new">Start NCOER</Link></Button>} />
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 rounded-sm border border-border bg-card p-3 shadow-card">
         <input
           type="text"
           placeholder="Search by soldier name…"
@@ -155,11 +136,11 @@ export default function AllEvaluationsPage() {
       )}
 
       {!isLoading && !error && filtered.length === 0 && (
-        <div className="rounded-sm border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {evals.length === 0 ? "No evaluations yet." : "No evaluations match your filters."}
-          </p>
-        </div>
+        evals.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="No evaluations yet" />
+        ) : (
+          <EmptyState icon={FilterX} title="No evaluations match your filters" description="Try clearing a filter to see more results." />
+        )
       )}
 
       {filtered.length > 0 && (
@@ -178,7 +159,7 @@ export default function AllEvaluationsPage() {
             return (
               <div
                 key={e.id}
-                className="flex items-center justify-between gap-4 rounded-sm border border-border bg-card p-4 transition-colors hover:bg-accent"
+                className="flex flex-col items-stretch justify-between gap-4 rounded-sm border border-border bg-card p-4 shadow-card transition-all duration-150 hover:-translate-y-0.5 hover:shadow-panel sm:flex-row sm:items-center"
               >
                 <Link href={`/evaluations/${e.id}/admin`} className="min-w-0 flex flex-1 items-center gap-3">
                 <div className="flex items-center gap-3">
@@ -204,11 +185,7 @@ export default function AllEvaluationsPage() {
                 </div>
                 </Link>
                 <div className="flex shrink-0 items-center gap-3">
-                <span
-                  className={`rounded-sm px-2 py-1 text-xs font-medium ${STATUS_COLORS[e.status]}`}
-                >
-                  {STATUS_LABELS[e.status]}
-                </span>
+                <StatusBadge status={e.status} />
                   {deletable && (
                     <button
                       type="button"
@@ -230,12 +207,12 @@ export default function AllEvaluationsPage() {
 
       {evaluationToDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-evaluation-title"
         >
-          <div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg">
+          <div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg animate-in zoom-in-95 duration-200">
             <h2 id="delete-evaluation-title" className="text-lg font-semibold">Delete this draft evaluation?</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               {evaluationToDelete.ratingChain?.ratedSoldier
@@ -243,7 +220,7 @@ export default function AllEvaluationsPage() {
                 : "This evaluation will be removed."}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              The evaluation, AI suggestions/uploads, milestones, and comments will be deleted. Its consumed support form will be restored for a new attempt.
+              The evaluation, MERIT suggestions/uploads, milestones, and comments will be deleted. Its consumed support form will be restored for a new attempt.
             </p>
             {deleteError && <p className="mt-3 text-sm text-red-700">{deleteError}</p>}
             <div className="mt-5 flex justify-end gap-3">

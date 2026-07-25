@@ -5,6 +5,7 @@ import { useParams, usePathname, useSearchParams } from "next/navigation";
 import { SoldierHeader } from "@/components/layout/SoldierHeader";
 import { SectionNav } from "@/components/evaluation/SectionNav";
 import { api } from "@/lib/api/client";
+import type { SectionKey } from "@/types/evaluation";
 
 interface EvalMeta {
   id: string;
@@ -12,6 +13,7 @@ interface EvalMeta {
   periodStart: string;
   periodEnd: string;
   principalDutyTitle: string | null;
+  sections?: { section: SectionKey; isComplete: boolean }[];
   ratingChain: {
     ratedSoldier: { firstName: string; lastName: string; rank: string; mos: string };
     rater: { firstName: string; lastName: string; rank: string };
@@ -43,11 +45,11 @@ function EvaluationLayoutContent({ children }: { children: React.ReactNode }) {
   const sr = meta?.ratingChain?.seniorRater;
 
   return (
-    <div className="flex h-full">
-      <div className="w-48 shrink-0 border-r border-border p-4">
-        <SectionNav evalId={id} />
+    <div className="flex min-h-full flex-col md:h-full md:flex-row">
+      <div className="w-full shrink-0 border-b border-border bg-background p-3 md:w-56 md:border-b-0 md:border-r md:p-4">
+        <SectionNav evalId={id} sections={meta?.sections} />
       </div>
-      <div className="flex flex-1 flex-col overflow-y-auto">
+      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
         <SoldierHeader
           name={
             soldier ? `${soldier.lastName.toUpperCase()}, ${soldier.firstName}` : "Loading…"
@@ -60,8 +62,8 @@ function EvaluationLayoutContent({ children }: { children: React.ReactNode }) {
           rater={rater ? `${rater.rank} ${rater.lastName}` : ""}
           seniorRater={sr ? `${sr.rank} ${sr.lastName}` : ""}
         />
-        {assisting && <div className="mx-6 mt-4 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">You are viewing permitted evaluation details while assisting this rating workflow. Your access is read-only unless an explicit capability grants a separate administrative action. You cannot make ratings, edit narratives, acknowledge, sign, submit, or change the rating chain.</div>}
-        <div className={isSignPage ? "flex-1 overflow-hidden" : "flex-1 overflow-y-auto p-6"}>{children}</div>
+        {assisting && <div className="mx-4 mt-4 rounded-sm border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900 md:mx-6">You are viewing permitted evaluation details while assisting this rating workflow. Your access is read-only unless an explicit capability grants a separate administrative action. You cannot make ratings, edit narratives, acknowledge, sign, submit, or change the rating chain.</div>}
+        <div className={isSignPage ? "flex-1 overflow-hidden" : "flex-1 overflow-y-auto p-4 md:p-6"}>{children}</div>
       </div>
     </div>
   );

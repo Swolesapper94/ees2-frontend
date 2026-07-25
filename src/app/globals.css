@@ -56,6 +56,28 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /*
+   * Accessibility: WCAG 2.1 SC 2.3.3 (Animation from Interactions) / Section 508.
+   * Any user who has asked their OS to reduce motion gets a static interface.
+   * Loading spinners are deliberately exempt — they communicate live system
+   * status, and freezing one reads as "the app hung," which is worse.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    .animate-spin {
+      animation-duration: 0.8s !important;
+      animation-iteration-count: infinite !important;
+    }
+  }
 }
 
 @layer utilities {
@@ -76,8 +98,36 @@
   .bg-status-submitted { background-color: var(--status-submitted); }
   .bg-status-accepted  { background-color: var(--status-accepted); }
 
+  /*
+   * Soft status tints for badges, table rows, and callouts. The solid
+   * bg-status-* values above are near-black and only work as filled bars or
+   * with white text; these are the low-emphasis surface equivalents.
+   * Always pair a tint with an icon or text label — color must never be the
+   * only signal (WCAG 1.4.1 Use of Color).
+   */
+  .bg-status-tint-progress { background-color: color-mix(in srgb, var(--status-progress) 10%, white); }
+  .bg-status-tint-pending  { background-color: color-mix(in srgb, var(--status-pending) 12%, white); }
+  .bg-status-tint-complete { background-color: color-mix(in srgb, var(--status-complete) 12%, white); }
+  .bg-status-tint-overdue  { background-color: color-mix(in srgb, var(--status-overdue) 10%, white); }
+
   /* Elevation utilities */
   .shadow-card  { box-shadow: var(--shadow-card); }
   .shadow-panel { box-shadow: var(--shadow-panel); }
   .shadow-modal { box-shadow: var(--shadow-modal); }
+
+  /*
+   * One-shot attention cue for content that just changed underneath the user
+   * (an accepted bullet landing in a section, a regenerated suggestion set
+   * replacing the previous round). Fades out on its own so it never becomes
+   * persistent visual noise, and is fully suppressed by the reduced-motion
+   * rule above.
+   */
+  .animate-flash-highlight {
+    animation: flash-highlight 1.2s ease-out 1;
+  }
+}
+
+@keyframes flash-highlight {
+  from { background-color: color-mix(in srgb, var(--status-pending) 22%, transparent); }
+  to   { background-color: transparent; }
 }

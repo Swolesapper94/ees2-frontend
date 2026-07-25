@@ -253,15 +253,15 @@ export default function ReviewPage() {
 
       {confirmDelete && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-evaluation-title"
         >
-          <div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg">
+          <div className="w-full max-w-md rounded-sm border border-border bg-background p-5 shadow-lg animate-in zoom-in-95 duration-200">
             <h2 id="delete-evaluation-title" className="text-lg font-semibold">Delete this draft evaluation?</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              This permanently removes the evaluation, sections, AI suggestions, uploads, milestones, and comments. Its consumed support form will be restored for a new attempt.
+              This permanently removes the evaluation, sections, MERIT suggestions, uploads, milestones, and comments. Its consumed support form will be restored for a new attempt.
             </p>
             {deleteError && <p className="mt-3 text-sm text-red-700">{deleteError}</p>}
             <div className="mt-5 flex justify-end gap-3">

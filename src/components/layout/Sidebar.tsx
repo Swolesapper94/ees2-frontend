@@ -22,6 +22,7 @@ interface SidebarProps {
   isCommander?: boolean;
   /** Identity and Access Administration is limited to application administrators. */
   canViewAdmin?: boolean;
+  className?: string;
 }
 
 function NavItem({ href, label, icon: Icon }: { href: string; label: string; icon: typeof LayoutDashboard }) {
@@ -49,9 +50,9 @@ function Divider() {
   return <div className="my-1 mx-2 border-t border-white/10" />;
 }
 
-export function Sidebar({ hasSoldiers = true, isCommander = false, canViewAdmin = false }: SidebarProps) {
+export function Sidebar({ hasSoldiers = true, isCommander = false, canViewAdmin = false, className }: SidebarProps) {
   return (
-    <aside className="flex w-60 flex-col bg-sidebar text-sidebar-text">
+    <aside className={cn("flex w-60 shrink-0 flex-col bg-sidebar text-sidebar-text", className)}>
       <div className="px-5 py-4">
         <div className="flex items-center gap-2">
           <Image

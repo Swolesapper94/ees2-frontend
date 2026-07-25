@@ -8,6 +8,9 @@ import { SupportFormUploadPanel } from "@/components/evaluation/SupportFormUploa
 import { RegulationReference } from "@/components/evaluation/RegulationReference";
 import { SectionSkeleton } from "@/components/evaluation/SectionSkeleton";
 import { api } from "@/lib/api/client";
+import { cn } from "@/lib/utils/cn";
+import { isPartIVSectionKey, SECTION_VISUALS } from "@/lib/utils/section-visuals";
+import { Check } from "lucide-react";
 import type {
   EvalSection,
   AIBulletSuggestion,
@@ -98,6 +101,8 @@ export default function SectionPage() {
   const isPipelineProcessing = Boolean(
     uploadState.hasUpload && uploadState.parseStatus && !["COMPLETE", "FAILED"].includes(uploadState.parseStatus),
   );
+  const sectionVisual = isPartIVSectionKey(sectionKey) ? SECTION_VISUALS[sectionKey] : null;
+  const SectionIcon = sectionVisual?.Icon;
 
   const soldier = (evaluation as unknown as { ratingChain?: { ratedSoldier?: { rank?: string; mos?: string } } })?.ratingChain?.ratedSoldier;
   const soldierInfo = {
@@ -108,26 +113,37 @@ export default function SectionPage() {
   };
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">{label}</h1>
-          <p className="text-sm text-muted-foreground">Part IV — Performance assessment</p>
-          {PART_IV_SECTIONS.has(sectionKey) && <RegulationReference sectionKey={sectionKey} />}
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-200">
+      <section className={cn(
+        "mb-5 flex items-start justify-between gap-4 rounded-sm border border-l-4 p-4 shadow-card",
+        sectionVisual ? `${sectionVisual.surface} ${sectionVisual.border} ${sectionVisual.accent}` : "border-border bg-card",
+      )}>
+        <div className="flex items-start gap-3">
+          {SectionIcon && (
+            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-sm", sectionVisual?.iconSurface)}>
+              <SectionIcon className="h-5 w-5" />
+            </div>
+          )}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Part IV · Performance assessment</p>
+            <h1 className={cn("mt-0.5 text-2xl font-bold tracking-tight", sectionVisual?.text)}>{label}</h1>
+            {PART_IV_SECTIONS.has(sectionKey) && <RegulationReference sectionKey={sectionKey} />}
+          </div>
         </div>
         {section?.isComplete && (
-          <span className="rounded-sm bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-            ✓ Complete
+          <span className="inline-flex items-center gap-1 rounded-sm bg-status-tint-complete px-2.5 py-1 text-xs font-semibold text-status-complete">
+            <Check className="h-3.5 w-3.5" /> Complete
           </span>
         )}
-      </div>
+      </section>
 
       {/* Support form upload status and reprocess controls apply only to Part IV sections. */}
       {PART_IV_SECTIONS.has(sectionKey) && !loading && (
-        <div className="mb-5 rounded-md border border-border bg-card p-4">
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Soldier Support Form
-          </h3>
+        <div className="mb-5 rounded-sm border border-sky-200 bg-sky-50/60 p-4 shadow-card">
+          <div className="mb-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-700">Evidence source</p>
+            <h2 className="mt-0.5 text-sm font-semibold text-sky-950">Soldier Support Form &amp; Document Import</h2>
+          </div>
           <SupportFormUploadPanel
             evalId={id}
             sectionKey={sectionKey}

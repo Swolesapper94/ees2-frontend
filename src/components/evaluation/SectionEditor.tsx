@@ -23,6 +23,8 @@ import { UploadedSupportFormViewer } from "./UploadedSupportFormViewer";
 import { api } from "@/lib/api/client";
 import { BULLET_MAX_CHARS } from "@/lib/utils/form-constants";
 import { cn } from "@/lib/utils/cn";
+import { isPartIVSectionKey, SECTION_VISUALS } from "@/lib/utils/section-visuals";
+import { FilePenLine, Scale, Sparkles } from "lucide-react";
 
 const PART_IV_SECTIONS: SectionKey[] = [
   "CHARACTER",
@@ -34,9 +36,9 @@ const PART_IV_SECTIONS: SectionKey[] = [
 ];
 
 /**
- * A new AI generation run for a section (from scratch, from selected
+ * A new MERIT generation run for a section (from scratch, from selected
  * accomplishments, or from selected observations — they all populate the
- * same "AI Performance Suggestions" round) supersedes that section's prior
+ * same "MERIT Performance Suggestions" round) supersedes that section's prior
  * undecided or rejected candidates instead of piling up beside them.
  * Accepted/edited suggestions are always kept — they already became final
  * bullets and carry a permanent provenance record. Suggestions tied to a
@@ -61,7 +63,7 @@ function replaceGeneratedSuggestions(
 export interface SectionEditorProps {
   section: EvalSection;
   evalId: string;
-  /** AI bullet suggestions for this evaluation (all sections) */
+  /** MERIT bullet suggestions for this evaluation (all sections) */
   aiBulletSuggestions?: AIBulletSuggestion[];
   /** Called with merged updates after any change */
   onSave?: (patch: Partial<EvalSection>) => Promise<void>;
@@ -76,7 +78,7 @@ export interface SectionEditorProps {
   supportFormObservations?: PerformanceObservation[];
   /** Server-derived relationship capability; never infer this from a global role. */
   canUseRaterEvidence?: boolean;
-  /** The original uploaded support form can be reviewed alongside AI suggestions. */
+  /** The original uploaded support form can be reviewed alongside MERIT suggestions. */
   uploadedSupportFormFileType?: string;
 }
 
@@ -132,6 +134,7 @@ export function SectionEditor({
   }, [aiBulletSuggestions]);
 
   const isPartIVSection = PART_IV_SECTIONS.includes(section.section as SectionKey);
+  const sectionVisual = isPartIVSectionKey(section.section) ? SECTION_VISUALS[section.section] : null;
   const canAddBullet = finalBullets.length < 5;
   const sectionSuggestions = localSuggestions.filter(
     (s) => s.sectionKey === section.section,
@@ -265,7 +268,7 @@ export function SectionEditor({
   async function handleMarkComplete() {
     if (pendingReviewCount > 0) {
       alert(
-        `Review all AI suggestions first — ${pendingReviewCount} remaining.\n\nAccept, edit, or reject each suggestion before marking complete.`,
+        `Review all MERIT suggestions first — ${pendingReviewCount} remaining.\n\nAccept, edit, or reject each suggestion before marking complete.`,
       );
       return;
     }
@@ -291,7 +294,7 @@ export function SectionEditor({
       setScratchText("");
       setAiPanelOpen(true);
     } catch {
-      setScratchError("AI generation failed. Check the backend connection and try again.");
+      setScratchError("MERIT generation failed. Check the backend connection and try again.");
     } finally {
       setGeneratingScratch(false);
     }
@@ -303,40 +306,45 @@ export function SectionEditor({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-1 duration-200">
       {/* Rating */}
-      {ratingStyle === "binary" && (
-        <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Rating
-          </h3>
-          <RatingBoxBinary value={ratingBinary} onChange={handleRatingBinaryChange} />
-        </div>
-      )}
-      {ratingStyle === "four-level" && (
-        <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            Rating
-          </h3>
-          <RatingBoxFourLevel
-            value={ratingFourLevel}
-            onChange={handleRatingFourLevelChange}
-          />
-        </div>
+      {ratingStyle !== "none" && (
+        <section className={cn("rounded-sm border border-l-4 bg-card p-4 shadow-card", sectionVisual?.accent ?? "border-l-primary")}>
+          <div className="mb-3 flex items-center gap-2">
+            <span className={cn("flex h-8 w-8 items-center justify-center rounded-sm", sectionVisual?.iconSurface ?? "bg-muted text-foreground")}>
+              <Scale className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Rater decision</p>
+              <h2 className="text-sm font-semibold">Performance rating</h2>
+            </div>
+          </div>
+          {ratingStyle === "binary" ? (
+            <RatingBoxBinary value={ratingBinary} onChange={handleRatingBinaryChange} />
+          ) : (
+            <RatingBoxFourLevel value={ratingFourLevel} onChange={handleRatingFourLevelChange} />
+          )}
+        </section>
       )}
 
-      {/* AI Panel Toggle */}
+      {/* MERIT suggestions toggle */}
       {canUseRaterEvidence && isPartIVSection && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded border border-border bg-muted/30 px-3 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-sky-200 bg-sky-50 px-4 py-3 shadow-card">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">AI Suggestions</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-sky-100 text-sky-800">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-700">Evidence-assisted drafting</p>
+              <span className="text-sm font-semibold text-sky-950">MERIT Suggestions</span>
+            </div>
             {sectionSuggestions.length > 0 && (
               <span
                 className={cn(
                   "rounded px-1.5 py-0.5 text-[10px] font-semibold",
                   pendingReviewCount > 0
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-green-100 text-green-800",
+                    ? "bg-status-tint-pending text-status-pending"
+                    : "bg-status-tint-complete text-status-complete",
                 )}
               >
                 {pendingReviewCount > 0
@@ -353,28 +361,37 @@ export function SectionEditor({
               className={cn(
                 "rounded px-2.5 py-1 text-xs font-medium transition-colors",
                 aiPanelOpen
-                  ? "bg-[#1A3010] text-white"
-                  : "border border-border bg-background text-foreground hover:bg-muted",
+                  ? "bg-sky-800 text-white shadow-sm"
+                  : "border border-sky-300 bg-background text-sky-900 hover:bg-sky-100",
               )}
             >
-              {aiPanelOpen ? "Hide AI" : "Show AI"}
+              {aiPanelOpen ? "Hide MERIT" : "Show MERIT"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Main content: split when AI open, single column otherwise */}
+      {/* Main content: split when MERIT suggestions are open, single column otherwise */}
       <div className={cn(aiPanelOpen && canUseRaterEvidence && isPartIVSection ? "grid gap-6 lg:grid-cols-2" : "")}>
         {/* Left column: bullets */}
-        <div className="space-y-4">
+        <section className="space-y-4 rounded-sm border border-border bg-card p-4 shadow-card">
           <div>
-            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Performance {contentLabelPlural} ({finalBullets.length}/5)
-            </h3>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-primary/10 text-primary">
+                  <FilePenLine className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Final evaluation content</p>
+                  <h2 className="text-sm font-semibold">Performance {contentLabelPlural}</h2>
+                </div>
+              </div>
+              <span className="rounded-sm bg-muted px-2 py-1 text-xs font-semibold text-muted-foreground">{finalBullets.length}/5</span>
+            </div>
 
             {finalBullets.length === 0 && (
               <p className="rounded border border-dashed border-border p-3 text-sm text-muted-foreground">
-                No {contentLabel === "comment" ? "comments" : "bullets"} yet. Accept AI suggestions or add one manually below.
+                No {contentLabel === "comment" ? "comments" : "bullets"} yet. Accept MERIT suggestions or add one manually below.
               </p>
             )}
 
@@ -401,8 +418,8 @@ export function SectionEditor({
           </div>
 
           {canAddBullet && editingIndex === null && (
-            <div>
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="border-t border-border pt-4">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Add {contentLabel === "comment" ? "Comment" : "Bullet"} Manually
               </h3>
               <BulletEditor onSave={(t) => handleAddBullet(t, "HUMAN")} />
@@ -430,14 +447,15 @@ export function SectionEditor({
               </p>
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Right column: AI suggestions */}
+        {/* Right column: MERIT suggestions */}
         {aiPanelOpen && canUseRaterEvidence && isPartIVSection && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              AI Performance Suggestions
-            </h3>
+          <section className="space-y-3 rounded-sm border border-sky-200 bg-sky-50/50 p-4 shadow-card animate-in fade-in slide-in-from-right-2 duration-200">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-700">Candidate workspace</p>
+              <h2 className="text-sm font-semibold text-sky-950">Review, use, edit, or reject</h2>
+            </div>
 
             <AIBulletPanel
               evalId={evalId}
@@ -520,7 +538,7 @@ export function SectionEditor({
             )}
 
             {generatingScratch && <BulletSkeleton count={2} />}
-          </div>
+          </section>
         )}
       </div>
 
@@ -548,7 +566,7 @@ export function SectionEditor({
             )}
             title={
               pendingReviewCount > 0
-                ? `Review ${pendingReviewCount} AI suggestion${pendingReviewCount !== 1 ? "s" : ""} first`
+                ? `Review ${pendingReviewCount} MERIT suggestion${pendingReviewCount !== 1 ? "s" : ""} first`
                 : undefined
             }
           >
