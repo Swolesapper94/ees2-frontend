@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { isPartIVSectionKey, SECTION_VISUALS } from "@/lib/utils/section-visuals";
 import { cn } from "@/lib/utils/cn";
+import { RaterEntryQueue } from "@/components/support-form/RaterEntryQueue";
 
 const SECTION_LABELS: Record<string, string> = {
   CHARACTER: "Character",
@@ -104,6 +105,7 @@ function SupportFormContent() {
   const [form, setForm] = useState<SupportForm | null>(null);
   const [formOptions, setFormOptions] = useState<FormOption[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRoles, setCurrentUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
@@ -117,6 +119,7 @@ function SupportFormContent() {
       try {
         const me = await api.get<CurrentUser>("/users/me");
         setCurrentUserId(me.id);
+        setCurrentUserRoles(me.roles);
         const [soldierCandidates, raterCandidates, ownForms] = await Promise.all([
           api.get<AssignmentCandidate[]>("/rating-chains?purpose=evaluation-creation&role=soldier"),
           api.get<AssignmentCandidate[]>("/rating-chains?purpose=evaluation-creation&role=rater"),
@@ -252,6 +255,8 @@ function SupportFormContent() {
           {assistanceMessage && <p className="mt-2 text-xs">{assistanceMessage}</p>}
         </div>
       )}
+
+      {currentUserRoles.includes("RATER") && <RaterEntryQueue />}
 
       {!loading && !error && formOptions.length > 1 && <div className="mb-4 rounded-sm border border-border bg-muted/20 p-3"><label className="block text-sm font-medium">Working support form<select aria-label="Working support form" value={form?.id ?? ""} onChange={(event) => selectForm(event.target.value)} className="mt-1 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm">{formOptions.map((option) => <option key={option.form.id} value={option.form.id}>{option.assignment?.ratedSoldier.rank} {option.assignment?.ratedSoldier.lastName} - {option.form.dutyTitle} ({option.form.status ?? "ACTIVE"})</option>)}</select></label></div>}
 
